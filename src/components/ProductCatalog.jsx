@@ -179,12 +179,16 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => {
               const isAdded = addedAnimationId === product.id;
+              const isOutOfStock = product.stockQuantity !== undefined ? product.stockQuantity <= 0 : !product.inStock;
+              const isLowStock = !isOutOfStock && product.stockQuantity !== undefined && product.stockQuantity > 0 && product.stockQuantity <= 3;
 
               return (
                 <div
                   key={product.id}
                   onClick={() => setActiveModalProduct(product)}
-                  className="group bg-slate-900/70 border border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/5 cursor-pointer"
+                  className={`group bg-slate-900/70 border border-slate-800/90 hover:border-cyan-500/50 rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/5 cursor-pointer ${
+                    isOutOfStock ? 'opacity-85' : ''
+                  }`}
                 >
                   <div>
                     {/* Image Container with Badges */}
@@ -192,7 +196,9 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                        className={`w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ${
+                          isOutOfStock ? 'grayscale-[40%]' : ''
+                        }`}
                         loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
@@ -202,6 +208,16 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
                           {product.badge}
                         </span>
                       )}
+
+                      {isOutOfStock ? (
+                        <span className="absolute top-2.5 right-2.5 bg-rose-600/95 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-lg backdrop-blur-sm animate-pulse">
+                          Out of Stock
+                        </span>
+                      ) : isLowStock ? (
+                        <span className="absolute top-2.5 right-2.5 bg-amber-500/90 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded shadow">
+                          Only {product.stockQuantity} Left
+                        </span>
+                      ) : null}
 
                       {/* Quick view icon overlay on hover */}
                       <button
@@ -260,28 +276,34 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
                       )}
                     </div>
 
-                    <button
-                      onClick={(e) => handleQuickAdd(product, e)}
-                      className={`p-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all ${
-                        isAdded
-                          ? 'bg-emerald-500 text-slate-950'
-                          : 'bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-slate-950 border border-cyan-500/30'
-                      }`}
-                      title="Add item to cart"
-                      aria-label={`Add ${product.name} to cart`}
-                    >
-                      {isAdded ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span className="hidden sm:inline">Added</span>
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-4 h-4" />
-                          <span className="hidden sm:inline">Add</span>
-                        </>
-                      )}
-                    </button>
+                    {isOutOfStock ? (
+                      <span className="px-3 py-1.5 rounded-xl font-bold text-xs bg-rose-950/60 text-rose-400 border border-rose-500/30">
+                        Out of Stock
+                      </span>
+                    ) : (
+                      <button
+                        onClick={(e) => handleQuickAdd(product, e)}
+                        className={`p-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                          isAdded
+                            ? 'bg-emerald-500 text-slate-950'
+                            : 'bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-slate-950 border border-cyan-500/30'
+                        }`}
+                        title="Add item to cart"
+                        aria-label={`Add ${product.name} to cart`}
+                      >
+                        {isAdded ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span className="hidden sm:inline">Added</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4" />
+                            <span className="hidden sm:inline">Add</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

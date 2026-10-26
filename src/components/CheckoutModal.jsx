@@ -24,7 +24,7 @@ export const CheckoutModal = () => {
     formatPrice,
     showNotification
   } = useCart();
-  const { addOrder } = useProducts();
+  const { addOrder, deductStock } = useProducts();
 
   const [shippingData, setShippingData] = useState({
     fullName: '',
@@ -69,6 +69,7 @@ export const CheckoutModal = () => {
 
     setOrderCompleted(completedOrder);
     addOrder(completedOrder);
+    deductStock(completedOrder.items);
     clearCart();
     showNotification(`Order placed successfully! Reference #${orderId}`, 'success');
   };

@@ -7,6 +7,7 @@ import {
   Unlock,
   Package,
   Plus,
+  Minus,
   Trash2,
   Edit2,
   Check,
@@ -58,6 +59,7 @@ export const AdminModal = () => {
     category: 'gaming-pc',
     price: '',
     originalPrice: '',
+    stockQuantity: 5,
     badge: 'New Arrival',
     image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=800&q=80',
     specs: '64GB DDR5 Memory\nRTX 4080 Super 16GB\n2TB Gen4 NVMe SSD',
@@ -124,11 +126,12 @@ export const AdminModal = () => {
       name: editingProduct.name,
       price: editingProduct.price,
       originalPrice: editingProduct.originalPrice,
+      stockQuantity: editingProduct.stockQuantity,
       category: editingProduct.category,
       categoryName: categories.find((c) => c.id === editingProduct.category)?.name || editingProduct.categoryName,
       badge: editingProduct.badge,
       image: editingProduct.image,
-      inStock: editingProduct.inStock,
+      inStock: editingProduct.stockQuantity > 0,
       specs: editingProduct.specs,
       warranty: editingProduct.warranty,
       description: editingProduct.description
@@ -402,16 +405,46 @@ export const AdminModal = () => {
                                     {p.badge}
                                   </span>
                                 )}
+                                
+                                {/* Stock Quantity Stepper */}
+                                <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg px-1 py-0.5">
+                                  <button
+                                    onClick={() => updateProduct(p.id, { stockQuantity: Math.max(0, (p.stockQuantity ?? 5) - 1) })}
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                    title="Decrease stock by 1"
+                                    aria-label="Decrease stock"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className={`text-[11px] font-mono font-bold px-1.5 min-w-[28px] text-center ${
+                                    (p.stockQuantity ?? 5) === 0
+                                      ? 'text-rose-400 font-extrabold'
+                                      : (p.stockQuantity ?? 5) <= 3
+                                      ? 'text-amber-400'
+                                      : 'text-emerald-400'
+                                  }`}>
+                                    Qty: {p.stockQuantity ?? 5}
+                                  </span>
+                                  <button
+                                    onClick={() => updateProduct(p.id, { stockQuantity: (p.stockQuantity ?? 5) + 1 })}
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                    title="Increase stock by 1"
+                                    aria-label="Increase stock"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+
                                 <button
                                   onClick={() => toggleStock(p.id)}
                                   className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors ${
-                                    p.inStock
+                                    (p.stockQuantity ?? 5) > 0
                                       ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
                                       : 'bg-rose-950 text-rose-400 border border-rose-500/30'
                                   }`}
                                   title="Click to toggle in-stock status"
                                 >
-                                  {p.inStock ? '✓ In Stock' : '✗ Out of Stock'}
+                                  {(p.stockQuantity ?? 5) > 0 ? '✓ In Stock' : '✗ Out of Stock'}
                                 </button>
                               </div>
 
@@ -555,7 +588,7 @@ export const AdminModal = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-300 mb-1">
                           Selling Price (₹) *
@@ -579,6 +612,24 @@ export const AdminModal = () => {
                           onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: e.target.value })}
                           className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">
+                          Stock Quantity (Units) *
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={editingProduct.stockQuantity ?? 0}
+                          onChange={(e) => setEditingProduct({
+                            ...editingProduct,
+                            stockQuantity: Math.max(0, parseInt(e.target.value) || 0)
+                          })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                        <span className="text-[10px] text-slate-500 mt-0.5 block">0 = Out of Stock</span>
                       </div>
 
                       <div>
@@ -697,7 +748,7 @@ export const AdminModal = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-300 mb-1">
                           Selling Price (₹) *
@@ -721,6 +772,21 @@ export const AdminModal = () => {
                           placeholder="94999"
                           value={newProductForm.originalPrice}
                           onChange={(e) => setNewProductForm({ ...newProductForm, originalPrice: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">
+                          Initial Stock Quantity *
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          placeholder="5"
+                          value={newProductForm.stockQuantity}
+                          onChange={(e) => setNewProductForm({ ...newProductForm, stockQuantity: Math.max(0, parseInt(e.target.value) || 0) })}
                           className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
                         />
                       </div>

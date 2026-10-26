@@ -6,7 +6,18 @@ export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem('amr_products');
-      return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((p) => {
+          const qty = p.stockQuantity !== undefined ? Number(p.stockQuantity) : (p.inStock === false ? 0 : 5);
+          return {
+            ...p,
+            stockQuantity: qty,
+            inStock: qty > 0
+          };
+        });
+      }
+      return DEFAULT_PRODUCTS;
     } catch {
       return DEFAULT_PRODUCTS;
     }
@@ -83,14 +94,17 @@ export const ProductProvider = ({ children }) => {
 
   // Product CRUD
   const addProduct = (newProduct) => {
+    const rawQty = newProduct.stockQuantity !== undefined ? Number(newProduct.stockQuantity) : 5;
+    const stockQty = Math.max(0, isNaN(rawQty) ? 0 : rawQty);
     const formatted = {
       ...newProduct,
       id: newProduct.id || `prod-${Date.now()}`,
       price: Number(newProduct.price) || 0,
       originalPrice: newProduct.originalPrice ? Number(newProduct.originalPrice) : undefined,
+      stockQuantity: stockQty,
+      inStock: stockQty > 0,
       rating: Number(newProduct.rating) || 5.0,
       reviewsCount: Number(newProduct.reviewsCount) || 1,
-      inStock: newProduct.inStock !== false,
       isFeatured: !!newProduct.isFeatured,
       specs: Array.isArray(newProduct.specs)
         ? newProduct.specs
@@ -113,6 +127,18 @@ export const ProductProvider = ({ children }) => {
               ? Number(updatedFields.originalPrice)
               : undefined;
           }
+          if (updatedFields.stockQuantity !== undefined) {
+            const parsedQty = Math.max(0, Number(updatedFields.stockQuantity) || 0);
+            updated.stockQuantity = parsedQty;
+            updated.inStock = parsedQty > 0;
+          } else if (updatedFields.inStock !== undefined) {
+            updated.inStock = updatedFields.inStock;
+            if (!updatedFields.inStock) {
+              updated.stockQuantity = 0;
+            } else if (updated.stockQuantity === 0) {
+              updated.stockQuantity = 5;
+            }
+          }
           if (typeof updatedFields.specs === 'string') {
             updated.specs = updatedFields.specs.split('\n').filter(Boolean);
           }
@@ -123,13 +149,39 @@ export const ProductProvider = ({ children }) => {
     );
   };
 
+  const deductStock = (purchasedItems) => {
+    if (!Array.isArray(purchasedItems) || purchasedItems.length === 0) return;
+    setProducts((prev) =>
+      prev.map((prod) => {
+        const itemMatch = purchasedItems.find((it) => it.id === prod.id);
+        if (itemMatch) {
+          const currQty = prod.stockQuantity ?? 5;
+          const newQty = Math.max(0, currQty - (itemMatch.quantity || 1));
+          return {
+            ...prod,
+            stockQuantity: newQty,
+            inStock: newQty > 0
+          };
+        }
+        return prod;
+      })
+    );
+  };
+
   const deleteProduct = (id) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
   };
 
   const toggleStock = (id) => {
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, inStock: !p.inStock } : p))
+      prev.map((p) => {
+        if (p.id === id) {
+          const nextStock = !p.inStock;
+          const nextQty = nextStock ? Math.max(1, p.stockQuantity || 5) : 0;
+          return { ...p, inStock: nextStock, stockQuantity: nextQty };
+        }
+        return p;
+      })
     );
   };
 
@@ -199,6 +251,7 @@ export const ProductProvider = ({ children }) => {
         tickets,
         addProduct,
         updateProduct,
+        deductStock,
         deleteProduct,
         toggleStock,
         addCategory,
