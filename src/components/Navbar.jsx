@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/useCart';
+import { useProducts } from '../context/useProducts';
 import {
   ShoppingCart,
   Menu,
@@ -8,11 +9,13 @@ import {
   MessageSquare,
   Cpu,
   ShieldCheck,
-  Search
+  Search,
+  Sliders
 } from 'lucide-react';
 
 export const Navbar = ({ onSearchChange, searchTerm }) => {
   const { cartCount, openCart } = useCart();
+  const { openAdmin } = useProducts();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -122,6 +125,16 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
                 <span>WhatsApp</span>
               </a>
 
+              {/* Admin Portal Button */}
+              <button
+                onClick={openAdmin}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500 hover:text-slate-950 transition-all"
+                title="Open AMR Store Admin Control Panel"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Admin</span>
+              </button>
+
               {/* Cart Drawer Trigger */}
               <button
                 onClick={openCart}
@@ -177,6 +190,15 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
             </div>
 
             <div className="pt-2 flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAdmin();
+                }}
+                className="w-full py-2.5 rounded-xl text-center text-sm font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-500/30 flex items-center justify-center gap-2"
+              >
+                <Sliders className="w-4 h-4" /> Store Admin Control Panel
+              </button>
               <a
                 href="https://wa.me/919876543210?text=Hello%20AMR%20Computers,%20I%20have%20an%20inquiry%20regarding%20a%20PC%20build%20or%20repair%20service"
                 target="_blank"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CartProvider } from './context/CartContext';
+import { ProductProvider } from './context/ProductContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { StatsSection } from './components/StatsSection';
@@ -12,6 +13,7 @@ import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
+import { AdminModal } from './components/AdminModal';
 import { ToastNotification } from './components/ToastNotification';
 
 export function AppContent() {
@@ -48,14 +50,17 @@ export function AppContent() {
       <Footer />
       <CartDrawer />
       <CheckoutModal />
+      <AdminModal />
     </div>
   );
 }
 
 export default function App() {
   return (
-    <CartProvider>
-      <AppContent />
-    </CartProvider>
+    <ProductProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </ProductProvider>
   );
 }

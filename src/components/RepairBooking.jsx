@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SERVICES } from '../data/services';
 import { useCart } from '../context/useCart';
+import { useProducts } from '../context/useProducts';
 import {
   Wrench,
   Clock,
@@ -14,6 +15,7 @@ import {
 
 export const RepairBooking = () => {
   const { formatPrice, showNotification } = useCart();
+  const { addTicket } = useProducts();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -53,11 +55,13 @@ export const RepairBooking = () => {
     }
 
     const ticketId = `AMR-REP-${Math.floor(100000 + Math.random() * 900000)}`;
-    setSubmittedBooking({
+    const ticket = {
       ...formData,
       ticketId,
       timestamp: new Date().toLocaleDateString()
-    });
+    };
+    setSubmittedBooking(ticket);
+    addTicket(ticket);
 
     showNotification(`Service ticket #${ticketId} created successfully!`, 'success');
   };

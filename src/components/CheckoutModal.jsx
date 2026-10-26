@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/useCart';
+import { useProducts } from '../context/useProducts';
 import {
   X,
   CheckCircle,
@@ -23,6 +24,7 @@ export const CheckoutModal = () => {
     formatPrice,
     showNotification
   } = useCart();
+  const { addOrder } = useProducts();
 
   const [shippingData, setShippingData] = useState({
     fullName: '',
@@ -66,6 +68,7 @@ export const CheckoutModal = () => {
     };
 
     setOrderCompleted(completedOrder);
+    addOrder(completedOrder);
     clearCart();
     showNotification(`Order placed successfully! Reference #${orderId}`, 'success');
   };

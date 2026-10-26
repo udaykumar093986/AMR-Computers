@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CATEGORIES, PRODUCTS } from '../data/products';
+import { useProducts } from '../context/useProducts';
 import { useCart } from '../context/useCart';
 import { ProductModal } from './ProductModal';
 import {
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
+  const { products, categories } = useProducts();
   const { addToCart, formatPrice } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
@@ -38,7 +39,7 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
   };
 
   const filteredProducts = useMemo(() => {
-    let result = [...PRODUCTS];
+    let result = [...products];
 
     // Category filter
     if (selectedCategory !== 'all') {
@@ -70,7 +71,7 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
     }
 
     return result;
-  }, [selectedCategory, searchTerm, sortBy]);
+  }, [selectedCategory, searchTerm, sortBy, products]);
 
   const handleQuickAdd = (product, e) => {
     e.stopPropagation();
@@ -122,7 +123,7 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
 
         {/* Category Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none no-scrollbar">
-          {CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const isActive = selectedCategory === cat.id;
             return (
               <button
@@ -134,7 +135,7 @@ export const ProductCatalog = ({ searchTerm, setSearchTerm }) => {
                     : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:text-white'
                 }`}
               >
-                {categoryIcons[cat.id]}
+                {categoryIcons[cat.id] || <Sparkles className="w-4 h-4" />}
                 <span>{cat.name}</span>
               </button>
             );
