@@ -17,7 +17,9 @@ import {
   ShoppingBag,
   Wrench,
   Save,
-  LogOut
+  LogOut,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export const AdminModal = () => {
@@ -44,6 +46,7 @@ export const AdminModal = () => {
 
   // Auth State
   const [pinInput, setPinInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
 
   // Active Tab: 'products' | 'categories' | 'orders' | 'tickets' | 'new-product'
@@ -82,9 +85,10 @@ export const AdminModal = () => {
     if (loginAdmin(pinInput)) {
       setAuthError('');
       setPinInput('');
+      setShowPassword(false);
       showNotification('Admin Portal unlocked successfully!', 'success');
     } else {
-      setAuthError('Incorrect PIN. Try "admin123" or "1234"');
+      setAuthError('Access Denied: Invalid administrator password.');
     }
   };
 
@@ -225,14 +229,25 @@ export const AdminModal = () => {
             </div>
 
             <form onSubmit={handleLogin} className="w-full max-w-xs space-y-3">
-              <input
-                type="password"
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Enter PIN (e.g. admin123)"
-                autoFocus
-                className="w-full text-center px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm font-mono tracking-widest text-white focus:outline-none focus:border-cyan-400"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  placeholder="••••••••"
+                  autoFocus
+                  className="w-full text-center px-10 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm font-mono tracking-widest text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
 
               {authError && (
                 <p className="text-xs text-rose-400 font-medium">{authError}</p>
@@ -247,10 +262,9 @@ export const AdminModal = () => {
               </button>
             </form>
 
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 max-w-xs">
-              <span className="text-cyan-400 font-semibold block">Store Demo Access:</span>
-              Use PIN: <strong className="text-white font-mono">admin123</strong> or <strong className="text-white font-mono">1234</strong>
-            </div>
+            <p className="text-[11px] text-slate-500 max-w-xs">
+              Confidential AMR administrative access only.
+            </p>
           </div>
         ) : (
           /* Authenticated Admin Dashboard Layout */
