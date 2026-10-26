@@ -1,8 +1,11 @@
 import React from 'react';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   Cpu,
   ShieldCheck,
-  Truck
+  Truck,
+  MapPin,
+  ExternalLink
 } from 'lucide-react';
 
 const currentYear = new Date().getFullYear();
@@ -10,6 +13,7 @@ const currentYear = new Date().getFullYear();
 export const Footer = () => {
 
   const brandPartners = [
+    'Epson Certified Channel Partner',
     'NVIDIA GeForce RTX',
     'AMD Ryzen & Radeon',
     'Intel Core Ultra',
@@ -144,17 +148,32 @@ export const Footer = () => {
           <div className="space-y-3">
             <h4 className="text-white font-bold text-sm tracking-wide">Store Hours & Help</h4>
             <ul className="space-y-2 text-slate-400">
-              <li>Mon – Sat: 10:00 AM – 9:00 PM</li>
-              <li>Sunday: 11:00 AM – 6:00 PM</li>
-              <li className="pt-2 text-cyan-400 font-semibold">
-                <a href="tel:+919876543210">+91 98765 43210</a>
+              <li>{STORE_INFO.operatingHours.weekdays}</li>
+              <li>{STORE_INFO.operatingHours.sunday}</li>
+              <li className="pt-2 text-cyan-400 font-semibold space-x-2">
+                <a href={`tel:${STORE_INFO.phoneCall}`} className="hover:underline">{STORE_INFO.phoneDisplay}</a>
+                <span className="text-slate-600">•</span>
+                <a href={`tel:${STORE_INFO.altPhoneCall}`} className="hover:underline">{STORE_INFO.altPhoneDisplay}</a>
               </li>
               <li>
-                <a href="mailto:support@amrcomputers.in" className="hover:text-white">
-                  support@amrcomputers.in
+                <a href={`mailto:${STORE_INFO.email}`} className="hover:text-white">
+                  {STORE_INFO.email}
                 </a>
               </li>
-              <li>Shop #12, Ground Floor, Tech Arcade, Commercial Complex, Bengaluru</li>
+              <li className="text-[11px] text-slate-400 leading-snug">
+                <span className="block text-slate-300 font-semibold">{STORE_INFO.address.shop}</span>
+                <span>{STORE_INFO.address.landmark}, {STORE_INFO.address.city}, {STORE_INFO.address.state} - {STORE_INFO.address.pincode}</span>
+              </li>
+              <li className="pt-1">
+                <a
+                  href={STORE_INFO.maps.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-cyan-400 hover:underline font-semibold"
+                >
+                  <MapPin className="w-3 h-3" /> View on Google Maps <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </li>
             </ul>
           </div>
 

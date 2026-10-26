@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/useCart';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   X,
   Star,
@@ -205,7 +206,7 @@ export const ProductModal = ({ product, onClose }) => {
 
             {/* WhatsApp Inquire */}
             <a
-              href={`https://wa.me/919876543210?text=${whatsappMessage}`}
+              href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-2.5 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition-all"

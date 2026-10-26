@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/useCart';
 import { useProducts } from '../context/useProducts';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   ShoppingCart,
   Menu,
@@ -44,17 +45,17 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
             <span className="font-semibold text-cyan-300">AMR COMPUTERS:</span>
-            <span>Authorized Hardware Center • Custom PC Specialists • Chip-Level Repairs</span>
+            <span>{STORE_INFO.badgeText}</span>
           </div>
           <div className="flex items-center gap-4 text-[11px] text-slate-400">
             <span className="hidden md:inline-flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> 100% Genuine Certified Parts
             </span>
             <a
-              href="tel:+919876543210"
+              href={`tel:${STORE_INFO.phoneCall}`}
               className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
             >
-              <Phone className="w-3 h-3 text-cyan-400" /> +91 98765 43210
+              <Phone className="w-3 h-3 text-cyan-400" /> {STORE_INFO.phoneDisplay}
             </a>
           </div>
         </div>
@@ -115,7 +116,9 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
 
               {/* WhatsApp direct chat button */}
               <a
-                href="https://wa.me/919876543210?text=Hello%20AMR%20Computers,%20I%20have%20an%20inquiry%20regarding%20a%20PC%20build%20or%20repair%20service"
+                href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(
+                  'Hello AMR Computers, I have an inquiry regarding a PC build or repair service'
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-slate-950 transition-all"
@@ -200,7 +203,9 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
                 <Sliders className="w-4 h-4" /> Store Admin Control Panel
               </button>
               <a
-                href="https://wa.me/919876543210?text=Hello%20AMR%20Computers,%20I%20have%20an%20inquiry%20regarding%20a%20PC%20build%20or%20repair%20service"
+                href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(
+                  'Hello AMR Computers, I have an inquiry regarding a PC build or repair service'
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2.5 rounded-xl text-center text-sm font-semibold bg-emerald-500 text-slate-950 flex items-center justify-center gap-2"
@@ -208,10 +213,10 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
                 <MessageSquare className="w-4 h-4" /> Chat on WhatsApp
               </a>
               <a
-                href="tel:+919876543210"
+                href={`tel:${STORE_INFO.phoneCall}`}
                 className="w-full py-2.5 rounded-xl text-center text-sm font-semibold bg-slate-900 border border-slate-700 text-slate-200 flex items-center justify-center gap-2"
               >
-                <Phone className="w-4 h-4 text-cyan-400" /> Call +91 98765 43210
+                <Phone className="w-4 h-4 text-cyan-400" /> Call {STORE_INFO.phoneDisplay}
               </a>
             </div>
           </div>

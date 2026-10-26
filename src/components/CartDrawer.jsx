@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/useCart';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   X,
   Trash2,
@@ -48,7 +49,7 @@ export const CartDrawer = () => {
       .join('%0A');
 
     const msg = `Hello AMR Computers! I want to place an order for the following items in my cart:%0A%0A${itemsList}%0A%0A*Total Order Value:* ${formatPrice(total)}%0A%0APlease let me know payment and dispatch details.`;
-    window.open(`https://wa.me/919876543210?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${msg}`, '_blank');
   };
 
   return (

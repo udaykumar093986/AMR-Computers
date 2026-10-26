@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { BUILDER_CATEGORIES, BUILDER_PARTS } from '../data/pcBuilderParts';
 import { useCart } from '../context/useCart';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   Cpu,
   Zap,
@@ -161,7 +162,7 @@ export const CustomPcBuilder = () => {
       .join('%0A');
 
     const msg = `Hello AMR Computers! I configured a custom PC build on your website:%0A%0A${partsList}%0A%0A*Total Estimated Price:* ${formatPrice(totalPrice)}%0A*Estimated Power:* ${totalWattage}W%0A%0APlease verify component compatibility, lead time, and final quote.`;
-    window.open(`https://wa.me/919876543210?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${msg}`, '_blank');
   };
 
   const selectedCount = Object.values(selectedParts).filter(Boolean).length;

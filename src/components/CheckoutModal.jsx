@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/useCart';
 import { useProducts } from '../context/useProducts';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   X,
   CheckCircle,
@@ -31,9 +32,9 @@ export const CheckoutModal = () => {
     phone: '',
     email: '',
     address: '',
-    city: '',
-    state: 'Karnataka',
-    pincode: '',
+    city: 'Nellore',
+    state: 'Andhra Pradesh',
+    pincode: '524001',
     deliveryType: 'express', // express or store-pickup
     paymentMethod: 'upi' // upi, card, cod
   });
@@ -81,7 +82,7 @@ export const CheckoutModal = () => {
       .join('%0A');
 
     const msg = `Hello AMR Computers! I placed an order on your website:%0A%0A*Order ID:* ${orderCompleted.orderId}%0A*Customer:* ${orderCompleted.shipping.fullName}%0A*Phone:* ${orderCompleted.shipping.phone}%0A*Delivery Type:* ${orderCompleted.shipping.deliveryType}%0A*Address:* ${orderCompleted.shipping.address}, ${orderCompleted.shipping.city} - ${orderCompleted.shipping.pincode}%0A*Payment Mode:* ${orderCompleted.shipping.paymentMethod.toUpperCase()}%0A%0A*Items:*%0A${itemsList}%0A%0A*Total Amount:* ${formatPrice(orderCompleted.total)}`;
-    window.open(`https://wa.me/919876543210?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${msg}`, '_blank');
   };
 
   return (
@@ -278,7 +279,7 @@ export const CheckoutModal = () => {
                       name="phone"
                       value={shippingData.phone}
                       onChange={handleChange}
-                      placeholder="+91 98765 43210"
+                      placeholder="e.g. +91 97007 68383"
                       required
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                     />
@@ -294,7 +295,7 @@ export const CheckoutModal = () => {
                     name="address"
                     value={shippingData.address}
                     onChange={handleChange}
-                    placeholder="Flat/House No., Street, Landmark"
+                    placeholder="e.g. Shop / House No., Street, Landmark"
                     required
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                   />
@@ -310,7 +311,7 @@ export const CheckoutModal = () => {
                       name="city"
                       value={shippingData.city}
                       onChange={handleChange}
-                      placeholder="Bengaluru"
+                      placeholder="Nellore"
                       required
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                     />
@@ -325,7 +326,7 @@ export const CheckoutModal = () => {
                       name="state"
                       value={shippingData.state}
                       onChange={handleChange}
-                      placeholder="Karnataka"
+                      placeholder="Andhra Pradesh"
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                     />
                   </div>
@@ -339,7 +340,7 @@ export const CheckoutModal = () => {
                       name="pincode"
                       value={shippingData.pincode}
                       onChange={handleChange}
-                      placeholder="560001"
+                      placeholder="524001"
                       required
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                     />

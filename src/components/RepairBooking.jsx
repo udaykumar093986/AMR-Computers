@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SERVICES } from '../data/services';
 import { useCart } from '../context/useCart';
 import { useProducts } from '../context/useProducts';
+import { STORE_INFO } from '../data/storeInfo';
 import {
   Wrench,
   Clock,
@@ -69,7 +70,7 @@ export const RepairBooking = () => {
   const shareBookingWhatsApp = () => {
     if (!submittedBooking) return;
     const msg = `Hello AMR Computers! I booked a repair service online.%0A%0A*Ticket ID:* ${submittedBooking.ticketId}%0A*Name:* ${submittedBooking.name}%0A*Phone:* ${submittedBooking.phone}%0A*Device:* ${submittedBooking.deviceType}%0A*Service:* ${submittedBooking.serviceType}%0A*Mode:* ${submittedBooking.mode}%0A*Preferred Slot:* ${submittedBooking.preferredDate || 'Earliest available'} (${submittedBooking.timeSlot})%0A*Issue:* ${submittedBooking.issueDescription || 'Standard diagnosis'}`;
-    window.open(`https://wa.me/919876543210?text=${msg}`, '_blank');
+    window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${msg}`, '_blank');
   };
 
   return (
@@ -265,7 +266,7 @@ export const RepairBooking = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        placeholder="+91 98765 43210"
+                        placeholder="e.g. +91 97007 68383"
                         required
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500"
                       />
