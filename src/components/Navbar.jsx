@@ -28,7 +28,10 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
   }, []);
 
   const navLinks = [
-    { name: 'Products', href: '#shop' },
+    { name: 'Products', href: '#products' },
+    { name: 'Book Repair', href: '#repair' },
+    { name: 'About', href: '#about' },
+    { name: 'Contact', href: '#contact' },
   ];
 
   return (
