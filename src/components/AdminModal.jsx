@@ -32,6 +32,10 @@ export const AdminModal = () => {
     addProduct,
     updateProduct,
     deleteProduct,
+    updateOrder,
+    deleteOrder,
+    updateTicket,
+    deleteTicket,
     toggleStock,
     addCategory,
     deleteCategory,
@@ -1026,22 +1030,27 @@ export const AdminModal = () => {
                           key={idx}
                           className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3"
                         >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2.5 gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2.5 gap-3">
                             <div>
-                              <span className="text-xs font-bold text-cyan-400 font-mono">
-                                {ord.orderId}
-                              </span>
-                              <span className="text-[11px] text-slate-400 ml-2">
-                                Date: {ord.date}
-                              </span>
+                              <span className="text-xs font-bold text-cyan-400 font-mono">{ord.orderId || ord.id || `Order ${idx + 1}`}</span>
+                              <span className="text-[11px] text-slate-400 ml-2">Date: {ord.date || '—'}</span>
+                              <div className="mt-2">
+                                <label className="text-[10px] text-slate-400 mr-2" htmlFor={`order-status-${ord.orderId || idx}`}>Status</label>
+                                <select id={`order-status-${ord.orderId || idx}`} value={ord.status || 'Pending'} onChange={(e) => updateOrder(ord.id || ord.orderId || idx, { status: e.target.value })} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                  <option value="Pending">Pending</option>
+                                  <option value="Confirmed">Confirmed</option>
+                                  <option value="Delivered">Delivered</option>
+                                </select>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <span className="text-sm font-bold text-white font-mono">
-                                Total: {formatPrice(ord.total)}
-                              </span>
-                              <span className="text-[10px] text-emerald-400 ml-2 uppercase font-semibold">
-                                {ord.shipping?.paymentMethod}
-                              </span>
+                            <div className="flex items-center justify-between sm:justify-end gap-3">
+                              <div className="text-right">
+                                <span className="text-sm font-bold text-white font-mono">Total: {formatPrice(ord.total)}</span>
+                                <span className="text-[10px] text-emerald-400 ml-2 uppercase font-semibold">{ord.shipping?.paymentMethod}</span>
+                              </div>
+                              <button type="button" onClick={() => { if (window.confirm(`Delete order ${ord.orderId || ''}?`)) { deleteOrder(ord.id || ord.orderId || idx); showNotification('Order deleted.', 'success'); } }} className="p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10" title="Delete order" aria-label="Delete order">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
 
@@ -1099,9 +1108,22 @@ export const AdminModal = () => {
                           key={idx}
                           className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs"
                         >
-                          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                            <span className="font-bold font-mono text-cyan-400">{t.ticketId}</span>
-                            <span className="text-emerald-400 font-semibold">{t.mode}</span>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-2 gap-3">
+                            <div>
+                              <span className="font-bold font-mono text-cyan-400">{t.ticketId || t.id || `Repair ${idx + 1}`}</span>
+                              <span className="text-emerald-400 font-semibold ml-2">{t.mode}</span>
+                              <div className="mt-2 flex items-center gap-2">
+                                <label className="text-[10px] text-slate-400" htmlFor={`repair-status-${t.ticketId || idx}`}>Status</label>
+                                <select id={`repair-status-${t.ticketId || idx}`} value={t.status || 'Pending'} onChange={(e) => updateTicket(t.id || t.ticketId || idx, { status: e.target.value })} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                  <option value="Pending">Pending</option>
+                                  <option value="Confirmed">Confirmed</option>
+                                  <option value="Delivered">Delivered</option>
+                                </select>
+                              </div>
+                            </div>
+                            <button type="button" onClick={() => { if (window.confirm(`Delete repair request ${t.ticketId || ''}?`)) { deleteTicket(t.id || t.ticketId || idx); showNotification('Repair request deleted.', 'success'); } }} className="self-start p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10" title="Delete repair request" aria-label="Delete repair request">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
