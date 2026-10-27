@@ -19,7 +19,9 @@ import {
   Save,
   LogOut,
   Eye,
-  EyeOff
+  EyeOff,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const AdminModal = () => {
@@ -90,6 +92,46 @@ export const AdminModal = () => {
     } else {
       setAuthError('Access Denied: Invalid administrator password.');
     }
+  };
+
+  // Convert uploaded product photos to a compact JPEG so browser storage is less likely to exceed its quota.
+  const handleProductImageUpload = (file, onImageReady) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showNotification('Please select an image file.', 'error');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification('Please choose an image smaller than 10 MB.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => showNotification('Could not read that image. Please try another file.', 'error');
+    reader.onload = () => {
+      const image = new window.Image();
+      image.onerror = () => showNotification('That image could not be opened.', 'error');
+      image.onload = () => {
+        const maxDimension = 1200;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          showNotification('Image processing is not supported in this browser.', 'error');
+          return;
+        }
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressedImage = canvas.toDataURL('image/jpeg', 0.78);
+        onImageReady(compressedImage);
+        showNotification('Product photo uploaded. Save the product to apply it.', 'success');
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   // Handle Add Product Submit
@@ -659,14 +701,24 @@ export const AdminModal = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Image URL (Unsplash or direct image link)
-                      </label>
+                    <div className="space-y-3">
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Product Photo</label>
+                      {editingProduct.image && (
+                        <img src={editingProduct.image} alt={editingProduct.name || 'Product preview'} className="h-32 w-full max-w-xs rounded-xl border border-slate-700 bg-white object-contain p-2" />
+                      )}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-cyan-400">
+                          <Upload className="h-4 w-4" /> Upload Photo
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { handleProductImageUpload(e.target.files?.[0], (image) => setEditingProduct((prev) => ({ ...prev, image }))); e.target.value = ''; }} />
+                        </label>
+                        <span className="text-[11px] text-slate-400">JPG, PNG or WebP · up to 10 MB</span>
+                      </div>
+                      <label className="block text-[11px] text-slate-400">Or paste an image URL</label>
                       <input
                         type="url"
-                        value={editingProduct.image}
+                        value={editingProduct.image || ''}
                         onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                        placeholder="https://example.com/product.jpg"
                         className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                       />
                     </div>
@@ -819,14 +871,24 @@ export const AdminModal = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        High-Resolution Image URL
-                      </label>
+                    <div className="space-y-3">
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Product Photo</label>
+                      {newProductForm.image && (
+                        <img src={newProductForm.image} alt="New product preview" className="h-32 w-full max-w-xs rounded-xl border border-slate-700 bg-white object-contain p-2" />
+                      )}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-cyan-400">
+                          <Upload className="h-4 w-4" /> Upload Photo
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { handleProductImageUpload(e.target.files?.[0], (image) => setNewProductForm((prev) => ({ ...prev, image }))); e.target.value = ''; }} />
+                        </label>
+                        <span className="text-[11px] text-slate-400">JPG, PNG or WebP · up to 10 MB</span>
+                      </div>
+                      <label className="block text-[11px] text-slate-400">Or paste an image URL</label>
                       <input
                         type="url"
                         value={newProductForm.image}
                         onChange={(e) => setNewProductForm({ ...newProductForm, image: e.target.value })}
+                        placeholder="https://example.com/product.jpg"
                         className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
                       />
                     </div>
