@@ -1,4 +1,4 @@
-
+```yaml
 name: Deploy AMR Computers
 
 on:
@@ -14,14 +14,25 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_FIREBASE_API_KEY: AIzaSyCPwiHfCaQs6aL4v-ZsJ_rKZS3LRZ0MPEM
+      VITE_FIREBASE_AUTH_DOMAIN: amr-computers.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: amr-computers
+      VITE_FIREBASE_STORAGE_BUCKET: amr-computers.firebasestorage.app
+      VITE_FIREBASE_APP_ID: 1:812810796527:web:a638539e0ae4cdd3bf8a1a
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - run: npm ci
+
       - run: npm run build
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -32,6 +43,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
