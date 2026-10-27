@@ -96,11 +96,7 @@ export const RepairBooking = () => {
           {SERVICES.map((srv) => (
             <div
               key={srv.id}
-              className={`p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
-                srv.popular
-                  ? 'bg-slate-900 border-cyan-500/40 shadow-lg shadow-cyan-500/5'
-                  : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
-              }`}
+              className="p-6 rounded-2xl border border-cyan-500/40 bg-slate-900 shadow-lg shadow-cyan-500/5 transition-all duration-300 flex flex-col justify-between hover:border-cyan-400" 
             >
               <div>
                 <div className="flex items-center justify-between mb-3">

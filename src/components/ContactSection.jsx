@@ -86,16 +86,27 @@ export const ContactSection = () => {
 
                 <div className="flex items-start gap-3">
                   <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-white block text-sm">Phone Support:</strong>
-                    <div className="space-x-2">
-                      <a href={`tel:${STORE_INFO.phoneCall}`} className="hover:text-cyan-400 font-semibold transition-colors">
-                        {STORE_INFO.phoneDisplay}
-                      </a>
-                      <span className="text-slate-500">•</span>
-                      <a href={`tel:${STORE_INFO.altPhoneCall}`} className="hover:text-cyan-400 transition-colors">
-                        {STORE_INFO.altPhoneDisplay}
-                      </a>
+                  <div className="flex-1">
+                    <strong className="text-white block text-sm">Contact Persons:</strong>
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <span className="block text-slate-200 font-semibold">Yeshwanth</span>
+                        <a
+                          href="tel:+918466902640"
+                          className="mt-1 inline-block text-cyan-400 hover:text-cyan-300 transition-colors"
+                        >
+                          +91 84669 02640
+                        </a>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <span className="block text-slate-200 font-semibold">Ramesh</span>
+                        <a
+                          href="tel:+919700769383"
+                          className="mt-1 inline-block text-cyan-400 hover:text-cyan-300 transition-colors"
+                        >
+                          +91 97007 69383
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>

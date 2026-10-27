@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { ProductContext } from './ProductContextDef';
-import { PRODUCTS as DEFAULT_PRODUCTS, CATEGORIES as DEFAULT_CATEGORIES } from '../data/products';
+import {
+  PRODUCTS as DEFAULT_PRODUCTS,
+  CATEGORIES as DEFAULT_CATEGORIES,
+} from '../data/products';
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+} from 'firebase/firestore';
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { auth, db } from '../firebase';
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
@@ -8,12 +26,18 @@ export const ProductProvider = ({ children }) => {
       const saved = localStorage.getItem('amr_products');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return parsed.map((p) => {
-          const qty = p.stockQuantity !== undefined ? Number(p.stockQuantity) : (p.inStock === false ? 0 : 5);
+        return parsed.map((product) => {
+          const quantity =
+            product.stockQuantity !== undefined
+              ? Number(product.stockQuantity)
+              : product.inStock === false
+                ? 0
+                : 5;
+
           return {
-            ...p,
-            stockQuantity: qty,
-            inStock: qty > 0
+            ...product,
+            stockQuantity: quantity,
+            inStock: quantity > 0,
           };
         });
       }
@@ -51,28 +75,16 @@ export const ProductProvider = ({ children }) => {
   });
 
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    try {
-      return sessionStorage.getItem('amr_admin_auth') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authUser, setAuthUser] = useState(null);
 
-  // Save to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('amr_products', JSON.stringify(products));
-    } catch {
-      // ignore
-    }
-  }, [products]);
-
+  // Firestore is the source of truth for products. Other data remains local for now.
   useEffect(() => {
     try {
       localStorage.setItem('amr_categories', JSON.stringify(categories));
     } catch {
-      // ignore
+      // Ignore storage errors.
     }
   }, [categories]);
 
@@ -80,7 +92,7 @@ export const ProductProvider = ({ children }) => {
     try {
       localStorage.setItem('amr_orders', JSON.stringify(orders));
     } catch {
-      // ignore
+      // Ignore storage errors.
     }
   }, [orders]);
 
@@ -88,182 +100,346 @@ export const ProductProvider = ({ children }) => {
     try {
       localStorage.setItem('amr_tickets', JSON.stringify(tickets));
     } catch {
-      // ignore
+      // Ignore storage errors.
     }
   }, [tickets]);
 
-  // Product CRUD
-  const addProduct = (newProduct) => {
-    const rawQty = newProduct.stockQuantity !== undefined ? Number(newProduct.stockQuantity) : 5;
-    const stockQty = Math.max(0, isNaN(rawQty) ? 0 : rawQty);
-    const formatted = {
-      ...newProduct,
-      id: newProduct.id || `prod-${Date.now()}`,
-      price: Number(newProduct.price) || 0,
-      originalPrice: newProduct.originalPrice ? Number(newProduct.originalPrice) : undefined,
-      stockQuantity: stockQty,
-      inStock: stockQty > 0,
-      rating: Number(newProduct.rating) || 5.0,
-      reviewsCount: Number(newProduct.reviewsCount) || 1,
-      isFeatured: !!newProduct.isFeatured,
-      specs: Array.isArray(newProduct.specs)
-        ? newProduct.specs
-        : (newProduct.specs || '').split('\n').filter(Boolean)
+  // Subscribe to Firestore products. This also correctly handles an empty collection.
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'products'),
+      (snapshot) => {
+        const firestoreProducts = snapshot.docs.map((productDoc) => {
+          const data = productDoc.data();
+          const rawQuantity =
+            data.stockQuantity !== undefined
+              ? Number(data.stockQuantity)
+              : data.inStock === false
+                ? 0
+                : 5;
+          const stockQuantity = Number.isFinite(rawQuantity) ? rawQuantity : 0;
+
+          return {
+            ...data,
+            id: productDoc.id,
+            name: typeof data.name === 'string' ? data.name : '',
+            category: typeof data.category === 'string' ? data.category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') : '',
+            categoryName:
+              typeof data.categoryName === 'string' ? data.categoryName.trim() : '',
+            company: typeof (data.company ?? data.brand ?? data.manufacturer ?? data.companyName) === 'string'
+              ? (data.company ?? data.brand ?? data.manufacturer ?? data.companyName).trim()
+              : '',
+            price: Number(data.price) || 0,
+            stockQuantity,
+            inStock: stockQuantity > 0,
+            specs: Array.isArray(data.specs)
+              ? data.specs
+              : typeof data.specs === 'string'
+                ? data.specs.split('\\n').filter(Boolean)
+                : [],
+          };
+        });
+
+        // Do not keep stale local/default products when Firestore is empty.
+        setProducts(firestoreProducts);
+      },
+      (error) => {
+        console.error(
+          'Firestore products subscription failed:',
+          error.code || error.message
+        );
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
+  // Keep admin access closed until Firebase has restored and verified the session.
+  useEffect(() => {
+    let active = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!active) return;
+
+      setAuthUser(user);
+      setIsAdminAuthenticated(false);
+
+      if (!user) {
+        setAuthLoading(false);
+        return;
+      }
+
+      try {
+        const adminRef = doc(db, 'admins', user.uid);
+        const adminSnapshot = await getDoc(adminRef);
+
+        if (!active) return;
+
+        const approved =
+          adminSnapshot.exists() &&
+          adminSnapshot.data().admin === true;
+
+        setIsAdminAuthenticated(approved);
+
+        if (!approved) {
+          await signOut(auth).catch(() => {});
+          if (active) setAuthUser(null);
+        }
+      } catch (error) {
+        console.error(
+          'Admin verification failed:',
+          error.code || error.message
+        );
+
+        if (active) {
+          setIsAdminAuthenticated(false);
+          setAuthUser(null);
+        }
+
+        await signOut(auth).catch(() => {});
+      } finally {
+        if (active) setAuthLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
     };
-    setProducts((prev) => [formatted, ...prev]);
+  }, []);
+
+  // Product CRUD writes directly to Firestore.
+  const normalizeProduct = (source) => {
+    const rawQuantity =
+      source.stockQuantity !== undefined ? Number(source.stockQuantity) : 5;
+    const stockQuantity = Math.max(
+      0,
+      Number.isFinite(rawQuantity) ? rawQuantity : 0
+    );
+
+    const formatted = {
+      ...source,
+      name: typeof source.name === 'string' ? source.name.trim() : '',
+      category: typeof source.category === 'string' ? source.category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') : '',
+      categoryName: typeof source.categoryName === 'string' ? source.categoryName.trim() : '',
+      company: typeof (source.company ?? source.brand ?? source.manufacturer ?? source.companyName) === 'string'
+        ? (source.company ?? source.brand ?? source.manufacturer ?? source.companyName).trim()
+        : '',
+      price: Number(source.price) || 0,
+      stockQuantity,
+      inStock: stockQuantity > 0,
+      rating: Number(source.rating) || 5,
+      reviewsCount: Number(source.reviewsCount) || 0,
+      isFeatured: Boolean(source.isFeatured),
+      specs: Array.isArray(source.specs)
+        ? source.specs
+        : typeof source.specs === 'string'
+          ? source.specs.split('\\n').filter(Boolean)
+          : [],
+    };
+
+    if (formatted.originalPrice === '' || formatted.originalPrice == null) {
+      delete formatted.originalPrice;
+    } else {
+      formatted.originalPrice = Number(formatted.originalPrice) || 0;
+    }
+
+    delete formatted.id;
+    Object.keys(formatted).forEach((key) => {
+      if (formatted[key] === undefined) delete formatted[key];
+    });
     return formatted;
   };
 
-  const updateProduct = (id, updatedFields) => {
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const updated = { ...p, ...updatedFields };
-          if (updatedFields.price !== undefined) {
-            updated.price = Number(updatedFields.price) || 0;
-          }
-          if (updatedFields.originalPrice !== undefined) {
-            updated.originalPrice = updatedFields.originalPrice
-              ? Number(updatedFields.originalPrice)
-              : undefined;
-          }
-          if (updatedFields.stockQuantity !== undefined) {
-            const parsedQty = Math.max(0, Number(updatedFields.stockQuantity) || 0);
-            updated.stockQuantity = parsedQty;
-            updated.inStock = parsedQty > 0;
-          } else if (updatedFields.inStock !== undefined) {
-            updated.inStock = updatedFields.inStock;
-            if (!updatedFields.inStock) {
-              updated.stockQuantity = 0;
-            } else if (updated.stockQuantity === 0) {
-              updated.stockQuantity = 5;
-            }
-          }
-          if (typeof updatedFields.specs === 'string') {
-            updated.specs = updatedFields.specs.split('\n').filter(Boolean);
-          }
-          return updated;
-        }
-        return p;
-      })
-    );
+  const requireAdmin = () => {
+    if (!auth.currentUser || !isAdminAuthenticated) {
+      throw new Error('ADMIN_LOGIN_REQUIRED');
+    }
   };
 
-  const deductStock = (purchasedItems) => {
+  const addProduct = async (newProduct) => {
+    requireAdmin();
+    const formatted = normalizeProduct(newProduct);
+    const created = await addDoc(collection(db, 'products'), formatted);
+    return { ...formatted, id: created.id };
+  };
+
+  const updateProduct = async (id, updatedFields) => {
+    requireAdmin();
+    const current = products.find((product) => product.id === id) || {};
+    const formatted = normalizeProduct({ ...current, ...updatedFields });
+    await updateDoc(doc(db, 'products', id), formatted);
+  };
+
+  const deductStock = async (purchasedItems) => {
     if (!Array.isArray(purchasedItems) || purchasedItems.length === 0) return;
-    setProducts((prev) =>
-      prev.map((prod) => {
-        const itemMatch = purchasedItems.find((it) => it.id === prod.id);
-        if (itemMatch) {
-          const currQty = prod.stockQuantity ?? 5;
-          const newQty = Math.max(0, currQty - (itemMatch.quantity || 1));
-          return {
-            ...prod,
-            stockQuantity: newQty,
-            inStock: newQty > 0
-          };
-        }
-        return prod;
+
+    await Promise.all(
+      purchasedItems.map(async (item) => {
+        const product = products.find((entry) => entry.id === item.id);
+        if (!product) return;
+
+        const currentQuantity = Number(product.stockQuantity ?? 5);
+        const nextQuantity = Math.max(
+          0,
+          currentQuantity - (Number(item.quantity) || 1)
+        );
+
+        await updateDoc(doc(db, 'products', product.id), {
+          stockQuantity: nextQuantity,
+          inStock: nextQuantity > 0,
+        });
       })
     );
   };
 
-  const deleteProduct = (id) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const deleteProduct = async (id) => {
+    requireAdmin();
+    await deleteDoc(doc(db, 'products', id));
   };
 
-  const toggleStock = (id) => {
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const nextStock = !p.inStock;
-          const nextQty = nextStock ? Math.max(1, p.stockQuantity || 5) : 0;
-          return { ...p, inStock: nextStock, stockQuantity: nextQty };
-        }
-        return p;
-      })
-    );
+  const toggleStock = async (id) => {
+    requireAdmin();
+    const product = products.find((entry) => entry.id === id);
+    if (!product) return;
+
+    const inStock = !product.inStock;
+    const stockQuantity = inStock
+      ? Math.max(1, Number(product.stockQuantity) || 5)
+      : 0;
+
+    await updateDoc(doc(db, 'products', id), { inStock, stockQuantity });
   };
 
-  // Category CRUD
+  // Category CRUD — local state/localStorage only for now.
   const addCategory = (categoryData) => {
-    const id = categoryData.id || categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const newCat = {
+    const id =
+      categoryData.id ||
+      categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const newCategory = {
       id,
       name: categoryData.name,
-      icon: categoryData.icon || 'Sparkles'
+      icon: categoryData.icon || 'Sparkles',
+      image: categoryData.image || '',
     };
-    setCategories((prev) => [...prev, newCat]);
-    return newCat;
+
+    setCategories((previous) => [...previous, newCategory]);
+    return newCategory;
   };
 
   const deleteCategory = (id) => {
     if (id === 'all') return;
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    setCategories((previous) =>
+      previous.filter((category) => category.id !== id)
+    );
   };
 
-  // Orders and Tickets
+  // Orders and repair tickets — local state/localStorage only for now.
   const addOrder = (order) => {
-    setOrders((prev) => [order, ...prev]);
+    setOrders((previous) => [order, ...previous]);
   };
 
   const updateOrder = (orderKey, updatedFields) => {
-    setOrders((prev) => prev.map((order, index) =>
-      (order.id || order.orderId || index) === orderKey ? { ...order, ...updatedFields } : order
-    ));
+    setOrders((previous) =>
+      previous.map((order, index) =>
+        (order.id || order.orderId || index) === orderKey
+          ? { ...order, ...updatedFields }
+          : order
+      )
+    );
   };
 
   const deleteOrder = (orderKey) => {
-    setOrders((prev) => prev.filter((order, index) =>
-      (order.id || order.orderId || index) !== orderKey
-    ));
+    setOrders((previous) =>
+      previous.filter(
+        (order, index) =>
+          (order.id || order.orderId || index) !== orderKey
+      )
+    );
   };
 
   const addTicket = (ticket) => {
-    setTickets((prev) => [ticket, ...prev]);
+    setTickets((previous) => [ticket, ...previous]);
   };
 
   const updateTicket = (ticketKey, updatedFields) => {
-    setTickets((prev) => prev.map((ticket, index) =>
-      (ticket.id || ticket.ticketId || index) === ticketKey ? { ...ticket, ...updatedFields } : ticket
-    ));
+    setTickets((previous) =>
+      previous.map((ticket, index) =>
+        (ticket.id || ticket.ticketId || index) === ticketKey
+          ? { ...ticket, ...updatedFields }
+          : ticket
+      )
+    );
   };
 
   const deleteTicket = (ticketKey) => {
-    setTickets((prev) => prev.filter((ticket, index) =>
-      (ticket.id || ticket.ticketId || index) !== ticketKey
-    ));
+    setTickets((previous) =>
+      previous.filter(
+        (ticket, index) =>
+          (ticket.id || ticket.ticketId || index) !== ticketKey
+      )
+    );
   };
 
-  // Reset to original factory defaults
-  const resetToDefaults = () => {
-    setProducts(DEFAULT_PRODUCTS);
+  const resetToDefaults = async () => {
+    requireAdmin();
+    const snapshot = await import('firebase/firestore').then(({ getDocs }) =>
+      getDocs(collection(db, 'products'))
+    );
+    await Promise.all(snapshot.docs.map((productDoc) => deleteDoc(productDoc.ref)));
     setCategories(DEFAULT_CATEGORIES);
-    localStorage.removeItem('amr_products');
     localStorage.removeItem('amr_categories');
   };
 
-  // Admin Auth
-  const loginAdmin = (pin) => {
-    if (pin === 'admin123' || pin === '1234') {
-      setIsAdminAuthenticated(true);
-      try {
-        sessionStorage.setItem('amr_admin_auth', 'true');
-      } catch {
-        // ignore
+  // Firebase Email/Password login followed by Firestore admin-role verification.
+  const loginAdmin = async (email, password) => {
+    const credential = await signInWithEmailAndPassword(
+      auth,
+      email.trim(),
+      password
+    );
+
+    try {
+      const adminRef = doc(db, 'admins', credential.user.uid);
+      const adminSnapshot = await getDoc(adminRef);
+
+      const approved =
+        adminSnapshot.exists() &&
+        adminSnapshot.data().admin === true;
+
+      if (!approved) {
+        await signOut(auth).catch(() => {});
+        throw new Error('ADMIN_NOT_AUTHORIZED');
       }
+
+      setAuthUser(credential.user);
+      setIsAdminAuthenticated(true);
       return true;
+    } catch (error) {
+      if (
+        error.message === 'ADMIN_NOT_AUTHORIZED' ||
+        error.code === 'permission-denied'
+      ) {
+        await signOut(auth).catch(() => {});
+        setAuthUser(null);
+        setIsAdminAuthenticated(false);
+
+        if (error.message === 'ADMIN_NOT_AUTHORIZED') throw error;
+        throw new Error('ADMIN_VERIFICATION_DENIED');
+      }
+
+      await signOut(auth).catch(() => {});
+      setAuthUser(null);
+      setIsAdminAuthenticated(false);
+      throw error;
     }
-    return false;
   };
 
-  const logoutAdmin = () => {
+  const logoutAdmin = async () => {
+    await signOut(auth);
+    setAuthUser(null);
     setIsAdminAuthenticated(false);
-    try {
-      sessionStorage.removeItem('amr_admin_auth');
-    } catch {
-      // ignore
-    }
   };
 
   return (
@@ -291,8 +467,10 @@ export const ProductProvider = ({ children }) => {
         openAdmin: () => setIsAdminOpen(true),
         closeAdmin: () => setIsAdminOpen(false),
         isAdminAuthenticated,
+        authLoading,
+        authUser,
         loginAdmin,
-        logoutAdmin
+        logoutAdmin,
       }}
     >
       {children}

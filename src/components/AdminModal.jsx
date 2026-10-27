@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useProducts } from '../context/useProducts';
 import { useCart } from '../context/useCart';
 import {
@@ -49,8 +49,10 @@ export const AdminModal = () => {
 
   const { formatPrice, showNotification } = useCart();
 
-  // Auth State
-  const [pinInput, setPinInput] = useState('');
+  // Firebase email/password authentication state
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -64,7 +66,8 @@ export const AdminModal = () => {
   // New Product Form State
   const [newProductForm, setNewProductForm] = useState({
     name: '',
-    category: 'gaming-pc',
+    company: '',
+    category: categories.find((category) => category.id !== 'all')?.id || '',
     price: '',
     originalPrice: '',
     stockQuantity: 5,
@@ -75,8 +78,20 @@ export const AdminModal = () => {
     description: 'High-performance hardware engineered for extreme workloads.'
   });
 
+  // Keep the selected category valid when the category list changes.
+  useEffect(() => {
+    const availableCategory = categories.find((category) => category.id !== 'all');
+    if (
+      availableCategory &&
+      !categories.some((category) => category.id === newProductForm.category)
+    ) {
+      setNewProductForm((previous) => ({ ...previous, category: availableCategory.id }));
+    }
+  }, [categories, newProductForm.category]);
+
   // New Category Form State
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryImage, setNewCategoryImage] = useState('');
 
   // Inline Quick Price Editing State
   const [inlinePriceEditId, setInlinePriceEditId] = useState(null);
@@ -84,16 +99,46 @@ export const AdminModal = () => {
 
   if (!isAdminOpen) return null;
 
-  // Handle PIN Login
-  const handleLogin = (e) => {
+  // Sign in with Firebase Authentication; ProductContext verifies the admins/{uid} record.
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (loginAdmin(pinInput)) {
-      setAuthError('');
-      setPinInput('');
+    setAuthError('');
+
+    if (!adminEmail.trim() || !adminPassword) {
+      setAuthError('Enter your administrator email and password.');
+      return;
+    }
+
+    setLoginLoading(true);
+    try {
+      await loginAdmin(adminEmail.trim(), adminPassword);
+      setAdminPassword('');
       setShowPassword(false);
-      showNotification('Admin Portal unlocked successfully!', 'success');
-    } else {
-      setAuthError('Access Denied: Invalid administrator password.');
+      showNotification('Admin signed in successfully!', 'success');
+    } catch (error) {
+      console.error('Admin login failed:', error?.code || error?.message || error);
+
+      if (
+        error?.code === 'auth/invalid-credential' ||
+        error?.code === 'auth/user-not-found' ||
+        error?.code === 'auth/wrong-password' ||
+        error?.code === 'auth/invalid-email'
+      ) {
+        setAuthError('Invalid email or password.');
+      } else if (
+        error?.message === 'ADMIN_NOT_AUTHORIZED' ||
+        error?.message === 'ADMIN_VERIFICATION_DENIED'
+      ) {
+        setAuthError('This account is not authorized as an administrator.');
+      } else if (error?.code === 'auth/too-many-requests') {
+        setAuthError('Too many attempts. Please try again later.');
+      } else if (error?.code === 'auth/network-request-failed') {
+        setAuthError('Network error. Check your internet connection and try again.');
+      } else {
+        setAuthError('Sign-in failed. Check your details and try again.');
+      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -138,24 +183,39 @@ export const AdminModal = () => {
   };
 
   // Handle Add Product Submit
-  const handleAddProductSubmit = (e) => {
+  const handleAddProductSubmit = async (e) => {
     e.preventDefault();
     if (!newProductForm.name || !newProductForm.price) {
       showNotification('Please enter product name and price', 'error');
       return;
     }
 
-    const matchedCat = categories.find((c) => c.id === newProductForm.category);
-    addProduct({
-      ...newProductForm,
-      categoryName: matchedCat ? matchedCat.name : 'Custom Hardware'
-    });
+    const matchedCat = categories.find((category) => category.id === newProductForm.category && category.id !== 'all')
+      || categories.find((category) => category.id !== 'all');
 
-    showNotification(`Product "${newProductForm.name}" added to catalog!`, 'success');
+    if (!matchedCat) {
+      showNotification('Create a product category before adding products.', 'error');
+      return;
+    }
+
+    try {
+      await addProduct({
+        ...newProductForm,
+        category: matchedCat.id,
+        categoryName: matchedCat.name,
+        company: (newProductForm.company || '').trim()
+      });
+      showNotification(`Product "${newProductForm.name}" added to catalog!`, 'success');
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      showNotification(error?.message === 'ADMIN_LOGIN_REQUIRED' ? 'Please sign in as an administrator again.' : 'Could not save product. Check Firebase permissions and try again.', 'error');
+      return;
+    }
     setActiveTab('products');
     setNewProductForm({
       name: '',
-      category: 'gaming-pc',
+      company: '',
+      category: categories.find((category) => category.id !== 'all')?.id || '',
       price: '',
       originalPrice: '',
       badge: 'New Arrival',
@@ -173,11 +233,13 @@ export const AdminModal = () => {
 
     updateProduct(editingProduct.id, {
       name: editingProduct.name,
+      company: (editingProduct.company || editingProduct.brand || editingProduct.manufacturer || '').trim(),
+      companyImage: editingProduct.companyImage || '',
       price: editingProduct.price,
       originalPrice: editingProduct.originalPrice,
       stockQuantity: editingProduct.stockQuantity,
       category: editingProduct.category,
-      categoryName: categories.find((c) => c.id === editingProduct.category)?.name || editingProduct.categoryName,
+      categoryName: categories.find((category) => category.id === editingProduct.category)?.name || editingProduct.categoryName,
       badge: editingProduct.badge,
       image: editingProduct.image,
       inStock: editingProduct.stockQuantity > 0,
@@ -204,16 +266,29 @@ export const AdminModal = () => {
   const handleAddCategory = (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    const added = addCategory({ name: newCategoryName.trim() });
+    const added = addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
     showNotification(`Category "${added.name}" added!`, 'success');
     setNewCategoryName('');
+    setNewCategoryImage('');
   };
 
-  // Filtered Products for Admin List
-  const filteredAdminProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    p.categoryName?.toLowerCase().includes(productSearch.toLowerCase())
-  );
+  // Filter products defensively: Firestore documents may omit optional fields.
+  const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
+  const normalizedProductSearch =
+    typeof productSearch === 'string' ? productSearch.trim().toLowerCase() : '';
+
+  const filteredAdminProducts = safeProducts.filter((product) => {
+    const name = typeof product.name === 'string' ? product.name : '';
+    const categoryName =
+      typeof product.categoryName === 'string' ? product.categoryName : '';
+    const category = typeof product.category === 'string' ? product.category : '';
+
+    return (
+      name.toLowerCase().includes(normalizedProductSearch) ||
+      categoryName.toLowerCase().includes(normalizedProductSearch) ||
+      category.toLowerCase().includes(normalizedProductSearch)
+    );
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-hidden">
@@ -267,43 +342,80 @@ export const AdminModal = () => {
             </div>
 
             <div className="max-w-sm">
-              <h3 className="text-xl font-bold text-white">Manager Authentication</h3>
+              <h3 className="text-xl font-bold text-white">Administrator Sign In</h3>
               <p className="text-xs text-slate-400 mt-1">
-                Enter your administrative PIN code to unlock live catalog editing and management tools.
+                Sign in with your authorized Firebase administrator account to manage the AMR catalog.
               </p>
             </div>
 
             <form onSubmit={handleLogin} className="w-full max-w-xs space-y-3">
-              <div className="relative">
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="amr-admin-email" className="block text-[11px] font-semibold text-slate-300">
+                  Administrator email
+                </label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  placeholder="••••••••"
+                  id="amr-admin-email"
+                  type="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  placeholder=""
+                  autoComplete="username"
                   autoFocus
-                  className="w-full text-center px-10 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm font-mono tracking-widest text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                  required
+                  disabled={loginLoading}
+                  className="w-full px-3.5 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 disabled:opacity-60"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="amr-admin-password" className="block text-[11px] font-semibold text-slate-300">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="amr-admin-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder=""
+                    autoComplete="current-password"
+                    required
+                    disabled={loginLoading}
+                    className="w-full px-3.5 pr-11 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 disabled:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    disabled={loginLoading}
+                    className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-50"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {authError && (
-                <p className="text-xs text-rose-400 font-medium">{authError}</p>
+                <p role="alert" className="text-xs text-rose-400 font-medium text-left">{authError}</p>
               )}
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
+                disabled={loginLoading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
               >
-                <Unlock className="w-4 h-4" />
-                <span>Unlock Control Center</span>
+                {loginLoading ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-slate-950/30 border-t-slate-950 animate-spin" />
+                    <span>Signing in…</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="w-4 h-4" />
+                    <span>Sign In to Control Center</span>
+                  </>
+                )}
               </button>
             </form>
 
@@ -647,6 +759,19 @@ export const AdminModal = () => {
                       </div>
                     </div>
 
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Company / Brand (sub-category)</label>
+                      <input type="text" placeholder="e.g. Logitech, Kingston, Corsair" value={editingProduct.company || editingProduct.brand || editingProduct.manufacturer || ''} onChange={(e) => setEditingProduct({ ...editingProduct, company: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        {editingProduct.companyImage && <img src={editingProduct.companyImage} alt="Company / sub-category preview" className="h-14 w-14 rounded-lg object-contain bg-white p-1" />}
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-950/40 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-950">
+                          <Upload className="h-4 w-4" /> Upload sub-category image
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { handleProductImageUpload(e.target.files?.[0], (image) => setEditingProduct((prev) => ({ ...prev, companyImage: image }))); e.target.value = ''; }} />
+                        </label>
+                        <span className="text-[11px] text-slate-500">Used for the company card</span>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -776,10 +901,10 @@ export const AdminModal = () => {
                   <div className="pb-3 border-b border-slate-800">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
                       <Plus className="w-4 h-4 text-cyan-400" />
-                      <span>Add New Hardware / System Product</span>
+                      <span>Add New Spare Part</span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Enter product specifications and pricing. It will appear live on the store instantly.
+                      Enter the spare-part details, category, brand, price and stock. It will appear on the store after saving.
                     </p>
                   </div>
 
@@ -792,7 +917,7 @@ export const AdminModal = () => {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. ASUS ROG Swift OLED 32-inch 4K 240Hz"
+                          placeholder="e.g. Mechanical Keyboard, DDR4 RAM, SATA Cable"
                           value={newProductForm.name}
                           onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
                           className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
@@ -814,6 +939,19 @@ export const AdminModal = () => {
                             </option>
                           ))}
                         </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Company / Brand (sub-category) *</label>
+                      <input type="text" required placeholder="e.g. Logitech, Kingston, Corsair" value={newProductForm.company} onChange={(e) => setNewProductForm({ ...newProductForm, company: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        {newProductForm.companyImage && <img src={newProductForm.companyImage} alt="Company / sub-category preview" className="h-14 w-14 rounded-lg object-contain bg-white p-1" />}
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-cyan-500/40 bg-cyan-950/40 px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-950">
+                          <Upload className="h-4 w-4" /> Upload sub-category image
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { handleProductImageUpload(e.target.files?.[0], (image) => setNewProductForm((prev) => ({ ...prev, companyImage: image }))); e.target.value = ''; }} />
+                        </label>
+                        <span className="text-[11px] text-slate-500">Used for the company card</span>
                       </div>
                     </div>
 
@@ -943,7 +1081,15 @@ export const AdminModal = () => {
                       <span>Create New Product Category</span>
                     </h3>
 
-                    <form onSubmit={handleAddCategory} className="flex gap-2">
+                    <form onSubmit={handleAddCategory} className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {newCategoryImage && <img src={newCategoryImage} alt="Category preview" className="h-16 w-24 rounded-lg border border-slate-700 bg-white object-contain p-1" />}
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-950/40 px-4 py-2.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-950">
+                          <Upload className="h-4 w-4" /> Upload category image
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { handleProductImageUpload(e.target.files?.[0], setNewCategoryImage); e.target.value = ''; }} />
+                        </label>
+                      </div>
+                      <div className="flex gap-2">
                       <input
                         type="text"
                         required
@@ -958,6 +1104,7 @@ export const AdminModal = () => {
                       >
                         Add Category
                       </button>
+                      </div>
                     </form>
                   </div>
 
@@ -975,11 +1122,12 @@ export const AdminModal = () => {
                           key={cat.id}
                           className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between"
                         >
-                          <div>
-                            <span className="text-xs font-bold text-white">{cat.name}</span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            {cat.image ? <img src={cat.image} alt={cat.name} className="h-12 w-16 rounded-lg object-cover bg-slate-900" /> : <div className="h-12 w-16 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-slate-500"><Upload className="h-4 w-4" /></div>}
+                            <div><span className="text-xs font-bold text-white">{cat.name}</span>
                             <span className="text-[11px] text-slate-500 ml-2 font-mono">
                               id: {cat.id} • ({count} products)
-                            </span>
+                            </span></div>
                           </div>
 
                           {cat.id !== 'all' && (
