@@ -20,6 +20,51 @@ import {
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
 
+
+const CATEGORY_ALIASES = {
+  keyboard: 'keyboard',
+  keyboards: 'keyboard',
+  mouse: 'mouse',
+  mice: 'mouse',
+  'hard-drive': 'hard-disk',
+  'hard-disk': 'hard-disk',
+  'hard-disks': 'hard-disk',
+  hdd: 'hard-disk',
+  ssd: 'storage-ram',
+  ssds: 'storage-ram',
+  ram: 'storage-ram',
+  'ram-ssds': 'storage-ram',
+  processor: 'cpus',
+  processors: 'cpus',
+  cpu: 'cpus',
+  'graphics-card': 'gpus',
+  'graphics-cards': 'gpus',
+  gpu: 'gpus',
+  motherboard: 'motherboards',
+  'power-supply': 'power-supplies',
+  fans: 'cooling',
+  coolers: 'cooling',
+  'pc-cases': 'cases',
+  case: 'cases',
+  monitor: 'monitors',
+  headphones: 'sound-audio',
+  audio: 'sound-audio',
+  cables: 'cables-adapters',
+};
+
+const normalizeCategoryId = (value) => {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const slug = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return CATEGORY_ALIASES[slug] || slug;
+};
+
+const categoryLabel = (value) => {
+  const id = normalizeCategoryId(value);
+  const category = DEFAULT_CATEGORIES.find((item) => item.id === id);
+  if (category && category.id !== 'all') return category.name;
+  return typeof value === 'string' ? value.trim() : '';
+};
+
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
     try {
@@ -123,12 +168,11 @@ export const ProductProvider = ({ children }) => {
             ...data,
             id: productDoc.id,
             name: typeof data.name === 'string' ? data.name : '',
-            category: typeof data.category === 'string' ? data.category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') : '',
+            category: normalizeCategoryId(data.category ?? data.categoryId ?? data.categoryName),
             categoryName:
-              typeof data.categoryName === 'string' ? data.categoryName.trim() : '',
-            company: typeof (data.company ?? data.brand ?? data.manufacturer ?? data.companyName) === 'string'
-              ? (data.company ?? data.brand ?? data.manufacturer ?? data.companyName).trim()
-              : '',
+              typeof data.categoryName === 'string' && data.categoryName.trim()
+                ? data.categoryName.trim()
+                : categoryLabel(data.category ?? data.categoryId ?? data.categoryName),
             price: Number(data.price) || 0,
             stockQuantity,
             inStock: stockQuantity > 0,
@@ -220,8 +264,11 @@ export const ProductProvider = ({ children }) => {
     const formatted = {
       ...source,
       name: typeof source.name === 'string' ? source.name.trim() : '',
-      category: typeof source.category === 'string' ? source.category.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') : '',
-      categoryName: typeof source.categoryName === 'string' ? source.categoryName.trim() : '',
+      category: normalizeCategoryId(source.category ?? source.categoryId ?? source.categoryName),
+      categoryName:
+        typeof source.categoryName === 'string' && source.categoryName.trim()
+          ? source.categoryName.trim()
+          : categoryLabel(source.category ?? source.categoryId ?? source.categoryName),
       company: typeof (source.company ?? source.brand ?? source.manufacturer ?? source.companyName) === 'string'
         ? (source.company ?? source.brand ?? source.manufacturer ?? source.companyName).trim()
         : '',
@@ -321,7 +368,6 @@ export const ProductProvider = ({ children }) => {
       id,
       name: categoryData.name,
       icon: categoryData.icon || 'Sparkles',
-      image: categoryData.image || '',
     };
 
     setCategories((previous) => [...previous, newCategory]);
@@ -384,12 +430,10 @@ export const ProductProvider = ({ children }) => {
 
   const resetToDefaults = async () => {
     requireAdmin();
-    const snapshot = await import('firebase/firestore').then(({ getDocs }) =>
-      getDocs(collection(db, 'products'))
-    );
-    await Promise.all(snapshot.docs.map((productDoc) => deleteDoc(productDoc.ref)));
+    // Reset the local category catalog only. Never delete Firestore products here.
     setCategories(DEFAULT_CATEGORIES);
-    localStorage.removeItem('amr_categories');
+    localStorage.setItem('amr_categories', JSON.stringify(DEFAULT_CATEGORIES));
+    localStorage.setItem('amr_categories_schema_version', '2');
   };
 
   // Firebase Email/Password login followed by Firestore admin-role verification.
