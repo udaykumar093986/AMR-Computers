@@ -207,8 +207,32 @@ export const ProductProvider = ({ children }) => {
     setOrders((prev) => [order, ...prev]);
   };
 
+  const updateOrder = (orderKey, updatedFields) => {
+    setOrders((prev) => prev.map((order, index) =>
+      (order.id || order.orderId || index) === orderKey ? { ...order, ...updatedFields } : order
+    ));
+  };
+
+  const deleteOrder = (orderKey) => {
+    setOrders((prev) => prev.filter((order, index) =>
+      (order.id || order.orderId || index) !== orderKey
+    ));
+  };
+
   const addTicket = (ticket) => {
     setTickets((prev) => [ticket, ...prev]);
+  };
+
+  const updateTicket = (ticketKey, updatedFields) => {
+    setTickets((prev) => prev.map((ticket, index) =>
+      (ticket.id || ticket.ticketId || index) === ticketKey ? { ...ticket, ...updatedFields } : ticket
+    ));
+  };
+
+  const deleteTicket = (ticketKey) => {
+    setTickets((prev) => prev.filter((ticket, index) =>
+      (ticket.id || ticket.ticketId || index) !== ticketKey
+    ));
   };
 
   // Reset to original factory defaults
@@ -257,7 +281,11 @@ export const ProductProvider = ({ children }) => {
         addCategory,
         deleteCategory,
         addOrder,
+        updateOrder,
+        deleteOrder,
         addTicket,
+        updateTicket,
+        deleteTicket,
         resetToDefaults,
         isAdminOpen,
         openAdmin: () => setIsAdminOpen(true),
