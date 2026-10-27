@@ -29,18 +29,13 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
   }, []);
 
   const navLinks = [
-    { name: 'Products & Store', href: '#shop' },
-    { name: 'Custom PC Builder', href: '#pc-builder' },
-    { name: 'Repair & Services', href: '#services' },
-    { name: 'Why AMR', href: '#why-us' },
-    { name: 'Customer Reviews', href: '#reviews' },
-    { name: 'Contact & Store', href: '#contact' },
+    { name: 'Products', href: '#shop' },
   ];
 
   return (
     <header className="sticky top-0 z-40 w-full">
       {/* Top Notification Bar */}
-      <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-blue-950 text-xs py-1.5 px-4 text-slate-300 border-b border-cyan-500/20">
+      <div className="bg-slate-100 text-xs py-1.5 px-4 text-slate-600 border-b border-slate-200">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
