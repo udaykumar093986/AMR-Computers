@@ -1,24 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CartProvider } from './context/CartContext';
 import { ProductProvider } from './context/ProductContext';
 import { Navbar } from './components/Navbar';
 import { ProductCatalog } from './components/ProductCatalog';
+import { RepairBooking } from './components/RepairBooking';
+import { ContactSection } from './components/ContactSection';
+import { AboutPage } from './components/AboutPage';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminModal } from './components/AdminModal';
 import { ToastNotification } from './components/ToastNotification';
 
+const getPageFromHash = () => {
+  const route = window.location.hash.replace('#', '').split('?')[0];
+  if (['repair', 'about', 'contact'].includes(route)) return route;
+  return 'products';
+};
+
 export function AppContent() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(getPageFromHash);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setPage(getPageFromHash());
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    };
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => window.removeEventListener('hashchange', handleRouteChange);
+  }, []);
 
   const handleSearchChange = (term) => {
     setSearchTerm(term);
-    if (term.trim().length > 1) {
+    if (term.trim().length > 1 && page !== 'products') {
+      window.location.hash = '#products';
+    } else if (term.trim().length > 1) {
       const shopEl = document.getElementById('shop');
-      if (shopEl) {
-        const topOffset = shopEl.getBoundingClientRect().top + window.pageYOffset - 90;
-        window.scrollTo({ top: topOffset, behavior: 'smooth' });
-      }
+      if (shopEl) shopEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -27,7 +45,10 @@ export function AppContent() {
       <ToastNotification />
       <Navbar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
       <main className="flex-grow">
-        <ProductCatalog searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        {page === 'repair' ? <RepairBooking /> : null}
+        {page === 'about' ? <AboutPage /> : null}
+        {page === 'contact' ? <ContactSection /> : null}
+        {page === 'products' ? <ProductCatalog searchTerm={searchTerm} setSearchTerm={setSearchTerm} /> : null}
       </main>
       <CartDrawer />
       <CheckoutModal />
