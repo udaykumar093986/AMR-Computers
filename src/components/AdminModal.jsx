@@ -20,8 +20,7 @@ import {
   LogOut,
   Eye,
   EyeOff,
-  Upload,
-  Image as ImageIcon
+  Upload
 } from 'lucide-react';
 
 export const AdminModal = () => {
