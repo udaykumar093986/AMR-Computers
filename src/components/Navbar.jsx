@@ -30,11 +30,6 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
 
   const navLinks = [
     { name: 'Products & Store', href: '#shop' },
-    { name: 'Custom PC Builder', href: '#pc-builder' },
-    { name: 'Repair & Services', href: '#services' },
-    { name: 'Why AMR', href: '#why-us' },
-    { name: 'Customer Reviews', href: '#reviews' },
-    { name: 'Contact & Store', href: '#contact' },
   ];
 
   return (
