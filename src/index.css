@@ -31,10 +31,11 @@ body [class~="bg-slate-950/90"] {
 body [class~="bg-slate-900"],
 body [class~="bg-slate-900/90"],
 body [class~="bg-slate-900/80"],
+body [class~="bg-slate-900/70"],
 body [class~="bg-slate-900/60"],
 body [class~="bg-slate-800/80"],
 body [class~="bg-slate-800/90"] {
-  background-color: #f8fafc !important;
+  background-color: #ffffff !important;
 }
 
 body [class~="bg-slate-800"],
@@ -82,6 +83,50 @@ body textarea::placeholder {
 body select option {
   background: #fff;
   color: #0f172a;
+}
+
+
+/* Product catalog refinements: bright cards, clearer type, and calm blue accents. */
+#shop {
+  background: #f8fafc !important;
+}
+
+#shop .group.bg-slate-900\/70 {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 18px rgb(15 23 42 / 0.06);
+}
+
+#shop .group.bg-slate-900\/70:hover {
+  border-color: #93c5fd !important;
+  box-shadow: 0 14px 32px rgb(37 99 235 / 0.10);
+}
+
+#shop .group.bg-slate-900\/70 h3,
+#shop .group.bg-slate-900\/70 h4 {
+  color: #0f172a !important;
+}
+
+#shop .group.bg-slate-900\/70 p {
+  color: #475569 !important;
+}
+
+#shop .group.bg-slate-900\/70 .text-slate-500,
+#shop .group.bg-slate-900\/70 .text-slate-400 {
+  color: #64748b !important;
+}
+
+#shop select {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  border-radius: 0.5rem;
+}
+
+#shop button:focus-visible,
+#shop select:focus-visible,
+#shop input:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 0.35);
+  outline-offset: 2px;
 }
 
 /* Keep motion subtle and respect accessibility preferences. */
