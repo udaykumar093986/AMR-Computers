@@ -118,7 +118,7 @@ export const ProductProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (!db) return undefined;
+    if (!db || !isAdminAuthenticated) return undefined;
     const unsubscribe = onSnapshot(
       collection(db, 'orders'),
       async (snapshot) => {
@@ -149,10 +149,10 @@ export const ProductProvider = ({ children }) => {
       (error) => console.warn('[AMR Computers] Orders subscription failed:', error?.code || error?.message || error)
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAdminAuthenticated]);
 
   useEffect(() => {
-    if (!db) return undefined;
+    if (!db || !isAdminAuthenticated) return undefined;
     const unsubscribe = onSnapshot(
       collection(db, 'repairBookings'),
       async (snapshot) => {
@@ -183,7 +183,7 @@ export const ProductProvider = ({ children }) => {
       (error) => console.warn('[AMR Computers] Repair bookings subscription failed:', error?.code || error?.message || error)
     );
     return () => unsubscribe();
-  }, []);
+  }, [isAdminAuthenticated]);
 
   useEffect(() => {
     if (!db) return undefined;
