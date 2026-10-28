@@ -39,6 +39,7 @@ export const AdminModal = () => {
     toggleStock,
     addCategory,
     deleteCategory,
+    updateCategoryImage,
     resetToDefaults,
     isAdminOpen,
     closeAdmin,
@@ -1128,8 +1129,29 @@ export const AdminModal = () => {
                           className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            {cat.image ? <img src={cat.image} alt={cat.name} className="h-12 w-16 rounded-lg object-cover bg-slate-900" /> : <div className="h-12 w-16 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-slate-500"><Upload className="h-4 w-4" /></div>}
-                            <div><span className="text-xs font-bold text-white">{cat.name}</span>
+                            <label className="relative flex h-12 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-700 bg-slate-900 text-slate-500 hover:border-cyan-500 hover:text-cyan-400" title={cat.image ? `Change ${cat.name} image` : `Upload ${cat.name} image`}>
+                              {cat.image ? <img src={cat.image} alt={cat.name} className="h-full w-full object-cover" /> : <Upload className="h-4 w-4" />}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                aria-label={cat.image ? `Change ${cat.name} image` : `Upload ${cat.name} image`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  handleProductImageUpload(file, async (image) => {
+                                    try {
+                                      await updateCategoryImage(cat.id, image);
+                                      showNotification(`Image saved for ${cat.name}.`, 'success');
+                                    } catch (error) {
+                                      console.error('[AMR Computers] Category image update failed:', error?.code || error?.message || error);
+                                      showNotification('Category image could not be saved to Firebase.', 'error');
+                                    }
+                                  });
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                            <div className="min-w-0"><span className="text-xs font-bold text-white">{cat.name}</span>
                             <span className="text-[11px] text-slate-500 ml-2 font-mono">
                               id: {cat.id} • ({count} products)
                             </span></div>
