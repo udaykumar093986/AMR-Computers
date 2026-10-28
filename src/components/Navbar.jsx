@@ -47,14 +47,14 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <a href="#" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300">
+            <a href="#" className="flex min-w-0 items-center gap-2 sm:gap-3 group">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300">
                 <Cpu className="w-6 h-6 text-slate-950 group-hover:rotate-12 transition-transform duration-300" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-xl sm:text-2xl tracking-wider text-white">AMR</span>
-                  <span className="font-bold text-base sm:text-xl tracking-wide bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">COMPUTERS</span>
+                  <span className="font-extrabold text-lg sm:text-2xl tracking-wider text-white">AMR</span>
+                  <span className="font-bold text-xs sm:text-xl tracking-wide bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">COMPUTERS</span>
                 </div>
                 <p className="text-[8px] sm:text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
                   Custom Rigs & Tech Studio
@@ -76,7 +76,7 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
             </div>
 
             {/* Actions: Search bar, WhatsApp & Cart Button */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-3">
               {/* Search shortcut for desktop */}
               <div className="hidden md:flex items-center relative">
                 <input
@@ -141,7 +141,7 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-slate-950 border-b border-slate-800 px-4 pt-3 pb-6 space-y-3">
+          <div className="lg:hidden max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-slate-950 border-b border-slate-800 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-3">
             {/* Mobile Search Input */}
             <div className="relative">
               <input
