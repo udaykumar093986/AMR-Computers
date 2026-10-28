@@ -143,8 +143,12 @@ export const ProductProvider = ({ children }) => {
             }
           }
         }
+        // Mark migration as handled once a populated cloud snapshot is received.
+        // This prevents deleting the last order from re-importing stale localStorage data.
+        if (!snapshot.empty) migratedOrdersRef.current = true;
+
         const cloudOrders = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
-        if (!snapshot.empty || !localStorage.getItem('amr_orders')) setOrders(cloudOrders);
+        setOrders(cloudOrders);
       },
       (error) => console.warn('[AMR Computers] Orders subscription failed:', error?.code || error?.message || error)
     );
@@ -177,8 +181,12 @@ export const ProductProvider = ({ children }) => {
             }
           }
         }
+        // Mark migration as handled once a populated cloud snapshot is received.
+        // This prevents deleting the last repair booking from re-importing stale localStorage data.
+        if (!snapshot.empty) migratedTicketsRef.current = true;
+
         const cloudTickets = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
-        if (!snapshot.empty || !localStorage.getItem('amr_tickets')) setTickets(cloudTickets);
+        setTickets(cloudTickets);
       },
       (error) => console.warn('[AMR Computers] Repair bookings subscription failed:', error?.code || error?.message || error)
     );
