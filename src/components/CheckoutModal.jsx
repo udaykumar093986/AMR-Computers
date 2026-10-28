@@ -61,12 +61,12 @@ export const CheckoutModal = () => {
       return;
     }
 
-    const normalizedPhone = shippingData.phone.replace(/[\\s()-]/g, '').replace(/^\\+?91/, '');
-    if (!/^[6-9]\\d{9}$/.test(normalizedPhone)) {
+    const normalizedPhone = shippingData.phone.replace(/[\s()-]/g, '').replace(/^\+?91/, '');
+    if (!/^[6-9]\d{9}$/.test(normalizedPhone)) {
       showNotification('Enter a valid 10-digit Indian mobile number.', 'error');
       return;
     }
-    if (!/^\\d{6}$/.test(shippingData.pincode.trim())) {
+    if (!/^\d{6}$/.test(shippingData.pincode.trim())) {
       showNotification('Enter a valid 6-digit PIN code.', 'error');
       return;
     }
