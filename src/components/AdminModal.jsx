@@ -456,7 +456,7 @@ export const AdminModal = () => {
                     setActiveTab('new-product');
                     setEditingProduct(null);
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-full transition-all ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-auto md:w-full shrink-0 transition-all ${
                     activeTab === 'new-product'
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -471,7 +471,7 @@ export const AdminModal = () => {
                     setActiveTab('categories');
                     setEditingProduct(null);
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-full transition-all ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-auto md:w-full shrink-0 transition-all ${
                     activeTab === 'categories'
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -486,7 +486,7 @@ export const AdminModal = () => {
                     setActiveTab('orders');
                     setEditingProduct(null);
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-full transition-all ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-auto md:w-full shrink-0 transition-all ${
                     activeTab === 'orders'
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -501,7 +501,7 @@ export const AdminModal = () => {
                     setActiveTab('tickets');
                     setEditingProduct(null);
                   }}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-full transition-all ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-auto md:w-full shrink-0 transition-all ${
                     activeTab === 'tickets'
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-bold'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900'
