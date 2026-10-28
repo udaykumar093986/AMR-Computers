@@ -1,21 +1,22 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import { ProductContext } from './ProductContextDef';
 import { db, auth } from '../firebase';
-import { 
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDoc 
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDoc
 } from 'firebase/firestore';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged 
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
 } from 'firebase/auth';
 
-export const ProductContext = createContext(null);
+export { ProductContext };
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
@@ -59,41 +60,37 @@ export const ProductProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [authUser, setAuthUser] = useState(null);
 
-  // Sync state to localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem('amr_categories', JSON.stringify(categories));
-    } catch {}
+    try { localStorage.setItem('amr_products', JSON.stringify(products)); } catch {}
+  }, [products]);
+
+  useEffect(() => {
+    try { localStorage.setItem('amr_categories', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('amr_orders', JSON.stringify(orders));
-    } catch {}
+    try { localStorage.setItem('amr_orders', JSON.stringify(orders)); } catch {}
   }, [orders]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('amr_tickets', JSON.stringify(tickets));
-    } catch {}
+    try { localStorage.setItem('amr_tickets', JSON.stringify(tickets)); } catch {}
   }, [tickets]);
 
-  // Real-time products listener (SAFELY GUARDED)
   useEffect(() => {
-    // If Firebase db is null (e.g. running on GitHub Pages without secrets), use local fallback
     if (!db) {
-      console.info('[AMR Computers] Firestore db is null. Running in offline/demo mode.');
-      return;
+      console.info('[AMR Computers] Firestore db is unavailable. Using local/offline data.');
+      return undefined;
     }
 
     try {
-      const colRef = collection(db, 'products');
       const unsubscribe = onSnapshot(
-        colRef,
+        collection(db, 'products'),
         (snapshot) => {
           const items = snapshot.docs.map((d) => {
             const data = d.data();
-            const stock = data.stockQuantity === undefined ? (data.inStock === false ? 0 : 5) : Number(data.stockQuantity);
+            const stock = data.stockQuantity === undefined
+              ? (data.inStock === false ? 0 : 5)
+              : Number(data.stockQuantity);
             return {
               ...data,
               id: d.id,
@@ -106,22 +103,19 @@ export const ProductProvider = ({ children }) => {
           });
           setProducts(items);
         },
-        (error) => {
-          console.warn('[AMR Computers] Products subscription fallback:', error);
-        }
+        (error) => console.warn('[AMR Computers] Products subscription fallback:', error)
       );
-
       return () => unsubscribe();
-    } catch (err) {
-      console.warn('[AMR Computers] Failed to listen to products collection:', err);
+    } catch (error) {
+      console.warn('[AMR Computers] Failed to listen to products collection:', error);
+      return undefined;
     }
   }, []);
 
-  // Admin Auth state observer (SAFELY GUARDED)
   useEffect(() => {
     if (!auth) {
       setAuthLoading(false);
-      return;
+      return undefined;
     }
 
     let isMounted = true;
@@ -149,7 +143,6 @@ export const ProductProvider = ({ children }) => {
     };
   }, []);
 
-  // Safe CRUD Actions
   const addProduct = async (productData) => {
     if (!db) {
       const localProduct = { ...productData, id: 'local-' + Date.now() };
@@ -161,72 +154,61 @@ export const ProductProvider = ({ children }) => {
   };
 
   const updateProduct = async (id, updatedData) => {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updatedData } : p)));
+    setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updatedData } : product));
     if (db) {
-      try {
-        await updateDoc(doc(db, 'products', id), updatedData);
-      } catch (err) {
-        console.warn('Update Firestore failed:', err);
-      }
+      try { await updateDoc(doc(db, 'products', id), updatedData); }
+      catch (error) { console.warn('Update Firestore failed:', error); }
     }
   };
 
   const deleteProduct = async (id) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setProducts((prev) => prev.filter((product) => product.id !== id));
     if (db) {
-      try {
-        await deleteDoc(doc(db, 'products', id));
-      } catch (err) {
-        console.warn('Delete Firestore failed:', err);
-      }
+      try { await deleteDoc(doc(db, 'products', id)); }
+      catch (error) { console.warn('Delete Firestore failed:', error); }
     }
   };
 
   const toggleStock = async (id) => {
-    const item = products.find((p) => p.id === id);
+    const item = products.find((product) => product.id === id);
     if (!item) return;
-    const newStock = !item.inStock;
-    const newQty = newStock ? Math.max(1, Number(item.stockQuantity) || 5) : 0;
-    await updateProduct(id, { inStock: newStock, stockQuantity: newQty });
+    const inStock = !item.inStock;
+    const stockQuantity = inStock ? Math.max(1, Number(item.stockQuantity) || 5) : 0;
+    await updateProduct(id, { inStock, stockQuantity });
   };
 
   const deductStock = async (itemsToDeduct) => {
     if (!Array.isArray(itemsToDeduct) || itemsToDeduct.length === 0) return;
     for (const item of itemsToDeduct) {
-      const current = products.find((p) => p.id === item.id);
+      const current = products.find((product) => product.id === item.id);
       if (current) {
         const remaining = Math.max(0, (Number(current.stockQuantity) || 5) - (Number(item.quantity) || 1));
-        await updateProduct(current.id, {
-          stockQuantity: remaining,
-          inStock: remaining > 0
-        });
+        await updateProduct(current.id, { stockQuantity: remaining, inStock: remaining > 0 });
       }
     }
   };
 
-  const addCategory = (cat) => {
-    const newCat = {
-      id: cat.id || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      name: cat.name,
-      icon: cat.icon || 'Sparkles'
+  const addCategory = (category) => {
+    const newCategory = {
+      id: category.id || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: category.name,
+      icon: category.icon || 'Sparkles'
     };
-    setCategories((prev) => [...prev, newCat]);
-    return newCat;
+    setCategories((prev) => [...prev, newCategory]);
+    return newCategory;
   };
 
   const deleteCategory = (id) => {
-    if (id !== 'all') {
-      setCategories((prev) => prev.filter((c) => c.id !== id));
-    }
+    if (id !== 'all') setCategories((prev) => prev.filter((category) => category.id !== id));
   };
 
   const addOrder = (order) => setOrders((prev) => [order, ...prev]);
-  const updateOrder = (id, data) => setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...data } : o)));
-  const deleteOrder = (id) => setOrders((prev) => prev.filter((o) => o.id !== id));
+  const updateOrder = (id, data) => setOrders((prev) => prev.map((order) => order.id === id ? { ...order, ...data } : order));
+  const deleteOrder = (id) => setOrders((prev) => prev.filter((order) => order.id !== id));
 
   const addTicket = (ticket) => setTickets((prev) => [ticket, ...prev]);
-  const updateTicket = (id, data) => setTickets((prev) => prev.map((t) => (t.ticketId === id || t.id === id ? { ...t, ...data } : t)));
-  const deleteTicket = (id) => setTickets((prev) => prev.filter((t) => t.ticketId !== id && t.id !== id));
+  const updateTicket = (id, data) => setTickets((prev) => prev.map((ticket) => ticket.ticketId === id || ticket.id === id ? { ...ticket, ...data } : ticket));
+  const deleteTicket = (id) => setTickets((prev) => prev.filter((ticket) => ticket.ticketId !== id && ticket.id !== id));
 
   const openAdmin = () => setIsAdminOpen(true);
   const closeAdmin = () => setIsAdminOpen(false);
@@ -236,16 +218,14 @@ export const ProductProvider = ({ children }) => {
       setIsAdminAuthenticated(true);
       return true;
     }
-    const res = await signInWithEmailAndPassword(auth, email.trim(), password);
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
     setIsAdminAuthenticated(true);
-    setAuthUser(res.user);
+    setAuthUser(result.user);
     return true;
   };
 
   const logoutAdmin = async () => {
-    if (auth) {
-      await signOut(auth);
-    }
+    if (auth) await signOut(auth);
     setIsAdminAuthenticated(false);
     setAuthUser(null);
   };
@@ -258,47 +238,20 @@ export const ProductProvider = ({ children }) => {
   };
 
   const contextValue = {
-    products,
-    categories,
-    orders,
-    tickets,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    toggleStock,
-    deductStock,
-    addCategory,
-    deleteCategory,
-    addOrder,
-    updateOrder,
-    deleteOrder,
-    addTicket,
-    updateTicket,
-    deleteTicket,
-    resetToDefaults,
-    isAdminOpen,
-    openAdmin,
-    closeAdmin,
-    isAdminAuthenticated,
-    authLoading,
-    authUser,
-    loginAdmin,
-    logoutAdmin
+    products, categories, orders, tickets,
+    addProduct, updateProduct, deleteProduct, toggleStock, deductStock,
+    addCategory, deleteCategory, addOrder, updateOrder, deleteOrder,
+    addTicket, updateTicket, deleteTicket, resetToDefaults,
+    isAdminOpen, openAdmin, closeAdmin,
+    isAdminAuthenticated, authLoading, authUser, loginAdmin, logoutAdmin
   };
 
-  return (
-    <ProductContext.Provider value={contextValue}>
-      {children}
-    </ProductContext.Provider>
-  );
+  return <ProductContext.Provider value={contextValue}>{children}</ProductContext.Provider>;
 };
 
-// Hook exported from the EXACT SAME CONTEXT
 export const useProducts = () => {
   const context = useContext(ProductContext);
-  if (!context) {
-    throw new Error('useProducts must be used within a ProductProvider');
-  }
+  if (!context) throw new Error('useProducts must be used within a ProductProvider');
   return context;
 };
 
