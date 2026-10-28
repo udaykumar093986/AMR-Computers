@@ -48,7 +48,11 @@ export function AppContent() {
   useEffect(() => {
     window.history.pushState({ amrStorefront: true }, '', window.location.href);
 
-    const handleBackButton = () => {
+    const handleBackButton = (event) => {
+      // ProductCatalog owns the nested Products → Category → Company history.
+      // Let it restore that view before the storefront-level Back handler runs.
+      if (event.state?.amrCatalogView) return;
+
       const current = backStateRef.current;
       if (current.isCheckoutOpen) {
         current.closeCheckout();
