@@ -160,18 +160,32 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm, isSearchOpen = 
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white">Hardware &amp; Systems Catalog</h2>
             <p className="text-sm text-slate-400 mt-2 max-w-xl">Explore quality computer spare parts, OEM components, and essential accessories backed by AMR’s comprehensive product support.</p>
             {isSearchOpen && (
-              <div className="relative mt-5 w-full max-w-xl">
+              <form
+                className="relative mt-5 w-full max-w-xl"
+                role="search"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  catalogSearchRef.current?.blur();
+                  requestAnimationFrame(() => {
+                    document.getElementById('search-results')?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start'
+                    });
+                  });
+                }}
+              >
                 <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   ref={catalogSearchRef}
                   type="search"
+                  enterKeyHint="search"
                   aria-label="Search products"
                   placeholder="Search products and accessories..."
                   value={searchTerm}
                   onChange={(event) => setSearchTerm?.(event.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                 />
-              </div>
+              </form>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -231,7 +245,7 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm, isSearchOpen = 
         )}
 
         {searchTerm && (
-          <div className="flex items-center justify-between mb-6 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div id="search-results" className="scroll-mt-28 flex items-center justify-between mb-6 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
             <div className="text-slate-300">Showing results for: <span className="font-semibold text-cyan-400">“{searchTerm}”</span> ({filteredProducts.length} items found)</div>
             <button onClick={() => setSearchTerm?.('')} className="text-cyan-400 hover:underline font-semibold">Clear search</button>
           </div>
