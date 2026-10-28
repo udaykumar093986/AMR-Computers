@@ -32,9 +32,9 @@ export const CheckoutModal = () => {
     phone: '',
     email: '',
     address: '',
-    city: 'Nellore',
-    state: 'Andhra Pradesh',
-    pincode: '524001',
+    city: '',
+    state: '',
+    pincode: '',
     deliveryType: 'express', // express or store-pickup
     paymentMethod: 'upi' // upi, card, cod
   });
