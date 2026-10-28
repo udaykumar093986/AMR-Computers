@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { ProductContext } from './ProductContextDef';
 import { db, auth } from '../firebase';
 import {
@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  setDoc,
   writeBatch
 } from 'firebase/firestore';
 import {
@@ -55,6 +56,9 @@ export const ProductProvider = ({ children }) => {
       return [];
     }
   });
+
+  const migratedOrdersRef = useRef(false);
+  const migratedTicketsRef = useRef(false);
 
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
@@ -111,6 +115,74 @@ export const ProductProvider = ({ children }) => {
       console.warn('[AMR Computers] Failed to listen to products collection:', error);
       return undefined;
     }
+  }, []);
+
+  useEffect(() => {
+    if (!db) return undefined;
+    const unsubscribe = onSnapshot(
+      collection(db, 'orders'),
+      async (snapshot) => {
+        if (snapshot.empty && !migratedOrdersRef.current) {
+          migratedOrdersRef.current = true;
+          let legacy = [];
+          try {
+            const saved = localStorage.getItem('amr_orders');
+            legacy = saved ? JSON.parse(saved) : [];
+          } catch {}
+          if (Array.isArray(legacy) && legacy.length) {
+            try {
+              const batch = writeBatch(db);
+              legacy.forEach((order, index) => {
+                const id = String(order.orderId || order.id || `legacy-order-${index}`).replace(/[^a-zA-Z0-9_-]/g, '-');
+                batch.set(doc(db, 'orders', id), { ...order, orderId: order.orderId || id, migratedFromLocalStorage: true }, { merge: true });
+              });
+              await batch.commit();
+              return;
+            } catch (error) {
+              console.warn('[AMR Computers] Legacy orders migration failed:', error?.code || error?.message || error);
+            }
+          }
+        }
+        const cloudOrders = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
+        if (!snapshot.empty || !localStorage.getItem('amr_orders')) setOrders(cloudOrders);
+      },
+      (error) => console.warn('[AMR Computers] Orders subscription failed:', error?.code || error?.message || error)
+    );
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!db) return undefined;
+    const unsubscribe = onSnapshot(
+      collection(db, 'repairBookings'),
+      async (snapshot) => {
+        if (snapshot.empty && !migratedTicketsRef.current) {
+          migratedTicketsRef.current = true;
+          let legacy = [];
+          try {
+            const saved = localStorage.getItem('amr_tickets');
+            legacy = saved ? JSON.parse(saved) : [];
+          } catch {}
+          if (Array.isArray(legacy) && legacy.length) {
+            try {
+              const batch = writeBatch(db);
+              legacy.forEach((ticket, index) => {
+                const id = String(ticket.ticketId || ticket.id || `legacy-repair-${index}`).replace(/[^a-zA-Z0-9_-]/g, '-');
+                batch.set(doc(db, 'repairBookings', id), { ...ticket, ticketId: ticket.ticketId || id, migratedFromLocalStorage: true }, { merge: true });
+              });
+              await batch.commit();
+              return;
+            } catch (error) {
+              console.warn('[AMR Computers] Legacy repair bookings migration failed:', error?.code || error?.message || error);
+            }
+          }
+        }
+        const cloudTickets = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
+        if (!snapshot.empty || !localStorage.getItem('amr_tickets')) setTickets(cloudTickets);
+      },
+      (error) => console.warn('[AMR Computers] Repair bookings subscription failed:', error?.code || error?.message || error)
+    );
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -254,13 +326,44 @@ export const ProductProvider = ({ children }) => {
     setCategories((prev) => prev.filter((category) => category.id !== id));
   };
 
-  const addOrder = (order) => setOrders((prev) => [order, ...prev]);
-  const updateOrder = (id, data) => setOrders((prev) => prev.map((order) => order.id === id ? { ...order, ...data } : order));
-  const deleteOrder = (id) => setOrders((prev) => prev.filter((order) => order.id !== id));
+  const addOrder = async (order) => {
+    if (!db) throw new Error('Firebase is unavailable. Order was not saved.');
+    const id = String(order.orderId || `order-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '-');
+    await setDoc(doc(db, 'orders', id), { ...order, orderId: order.orderId || id });
+    return { ...order, id, orderId: order.orderId || id };
+  };
 
-  const addTicket = (ticket) => setTickets((prev) => [ticket, ...prev]);
-  const updateTicket = (id, data) => setTickets((prev) => prev.map((ticket) => ticket.ticketId === id || ticket.id === id ? { ...ticket, ...data } : ticket));
-  const deleteTicket = (id) => setTickets((prev) => prev.filter((ticket) => ticket.ticketId !== id && ticket.id !== id));
+  const updateOrder = async (id, data) => {
+    if (!db) throw new Error('Firebase is unavailable. Order was not updated.');
+    const order = orders.find((item) => item.id === id || item.orderId === id);
+    const docId = order?.id || String(id);
+    await updateDoc(doc(db, 'orders', docId), data);
+  };
+
+  const deleteOrder = async (id) => {
+    if (!db) throw new Error('Firebase is unavailable. Order was not deleted.');
+    const order = orders.find((item) => item.id === id || item.orderId === id);
+    await deleteDoc(doc(db, 'orders', order?.id || String(id)));
+  };
+
+  const addTicket = async (ticket) => {
+    if (!db) throw new Error('Firebase is unavailable. Repair booking was not saved.');
+    const id = String(ticket.ticketId || `repair-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '-');
+    await setDoc(doc(db, 'repairBookings', id), { ...ticket, ticketId: ticket.ticketId || id });
+    return { ...ticket, id, ticketId: ticket.ticketId || id };
+  };
+
+  const updateTicket = async (id, data) => {
+    if (!db) throw new Error('Firebase is unavailable. Repair booking was not updated.');
+    const ticket = tickets.find((item) => item.id === id || item.ticketId === id);
+    await updateDoc(doc(db, 'repairBookings', ticket?.id || String(id)), data);
+  };
+
+  const deleteTicket = async (id) => {
+    if (!db) throw new Error('Firebase is unavailable. Repair booking was not deleted.');
+    const ticket = tickets.find((item) => item.id === id || item.ticketId === id);
+    await deleteDoc(doc(db, 'repairBookings', ticket?.id || String(id)));
+  };
 
   const openAdmin = () => setIsAdminOpen(true);
   const closeAdmin = () => setIsAdminOpen(false);
