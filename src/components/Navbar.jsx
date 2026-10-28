@@ -13,7 +13,7 @@ import {
   Sliders
 } from 'lucide-react';
 
-export const Navbar = ({ onSearchChange, searchTerm }) => {
+export const Navbar = ({ onToggleSearch }) => {
   const { cartCount, openCart } = useCart();
   const { openAdmin } = useProducts();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -103,36 +103,16 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
                 <span>Admin</span>
               </button>
 
-              {/* Expandable product search, opened by the search icon */}
-              <div className="flex items-center gap-1">
-                {isSearchOpen && (
-                  <input
-                    ref={searchInputRef}
-                    type="search"
-                    aria-label="Search products"
-                    placeholder="Search products..."
-                    value={searchTerm}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    className="w-28 sm:w-40 md:w-48 px-3 py-2 bg-slate-900 border border-slate-700 rounded-full text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isSearchOpen) {
-                      setIsSearchOpen(false);
-                    } else {
-                      setIsSearchOpen(true);
-                      requestAnimationFrame(() => searchInputRef.current?.focus());
-                    }
-                  }}
-                  className="flex items-center justify-center p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-200 hover:text-cyan-400 transition-colors"
-                  aria-label={isSearchOpen ? 'Close product search' : 'Open product search'}
-                  title={isSearchOpen ? 'Close search' : 'Search products'}
-                >
-                  {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
-                </button>
-              </div>
+              {/* Search icon opens the catalog search field below its heading */}
+              <button
+                type="button"
+                onClick={onToggleSearch}
+                className="flex items-center justify-center p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-200 hover:text-cyan-400 transition-colors"
+                aria-label="Open product search"
+                title="Search products"
+              >
+                <Search className="w-5 h-5" />
+              </button>
 
               {/* Cart Drawer Trigger */}
               <button
