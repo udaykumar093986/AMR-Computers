@@ -48,23 +48,35 @@ export const RepairBooking = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const [isSavingBooking, setIsSavingBooking] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
       showNotification('Please enter your name and phone number', 'error');
       return;
     }
+    if (isSavingBooking) return;
 
     const ticketId = `AMR-REP-${Math.floor(100000 + Math.random() * 900000)}`;
     const ticket = {
       ...formData,
       ticketId,
-      timestamp: new Date().toLocaleDateString()
+      status: 'Pending',
+      timestamp: new Date().toISOString()
     };
-    setSubmittedBooking(ticket);
-    addTicket(ticket);
 
-    showNotification(`Service ticket #${ticketId} created successfully!`, 'success');
+    setIsSavingBooking(true);
+    try {
+      await addTicket(ticket);
+      setSubmittedBooking(ticket);
+      showNotification(`Repair booking saved to Firebase! Ticket #${ticketId}`, 'success');
+    } catch (error) {
+      console.error('[AMR Computers] Repair booking save failed:', error?.code || error?.message || error);
+      showNotification('Repair booking could not be saved. Please try again.', 'error');
+    } finally {
+      setIsSavingBooking(false);
+    }
   };
 
   const shareBookingWhatsApp = () => {
