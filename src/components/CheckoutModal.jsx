@@ -398,6 +398,10 @@ export const CheckoutModal = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <label
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setShippingData((previous) => ({ ...previous, paymentMethod: 'upi' }));
+                    }}
                     className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center transition-all ${
                       shippingData.paymentMethod === 'upi'
                         ? 'bg-cyan-950/40 border-cyan-500 text-white'
@@ -418,6 +422,10 @@ export const CheckoutModal = () => {
                   </label>
 
                   <label
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setShippingData((previous) => ({ ...previous, paymentMethod: 'card' }));
+                    }}
                     className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center transition-all ${
                       shippingData.paymentMethod === 'card'
                         ? 'bg-cyan-950/40 border-cyan-500 text-white'
@@ -438,6 +446,10 @@ export const CheckoutModal = () => {
                   </label>
 
                   <label
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setShippingData((previous) => ({ ...previous, paymentMethod: 'cod' }));
+                    }}
                     className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center transition-all ${
                       shippingData.paymentMethod === 'cod'
                         ? 'bg-cyan-950/40 border-cyan-500 text-white'
