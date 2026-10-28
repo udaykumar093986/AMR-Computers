@@ -75,20 +75,8 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
               ))}
             </div>
 
-            {/* Actions: Search bar, WhatsApp & Cart Button */}
-            <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-              {/* Search shortcut for desktop */}
-              <div className="hidden md:flex items-center relative">
-                <input
-                  type="text"
-                  placeholder="Search PCs, GPUs, RAM..."
-                  value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-48 lg:w-56 pl-9 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-all"
-                />
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 pointer-events-none" />
-              </div>
-
+            {/* Actions: WhatsApp, Admin, Search beside Cart */}
+            <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-3">
               {/* WhatsApp direct chat button */}
               <a
                 href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(
@@ -112,6 +100,19 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
                 <Sliders className="w-3.5 h-3.5" />
                 <span>Admin</span>
               </button>
+
+              {/* Search bar beside the cart on desktop and mobile */}
+              <div className="relative min-w-0">
+                <input
+                  type="search"
+                  aria-label="Search products"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-[76px] xs:w-24 sm:w-32 md:w-40 lg:w-48 pl-7 sm:pl-8 pr-2 py-2 bg-slate-900 border border-slate-800 rounded-full text-[11px] sm:text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-all"
+                />
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2 sm:left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
 
               {/* Cart Drawer Trigger */}
               <button
@@ -142,18 +143,6 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="lg:hidden max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-slate-950 border-b border-slate-800 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-3">
-            {/* Mobile Search Input */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search PCs, GPUs, RAM..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-              />
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3 pointer-events-none" />
-            </div>
-
             <div className="flex flex-col space-y-1">
               {navLinks.map((link) => (
                 <a
