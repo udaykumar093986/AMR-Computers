@@ -53,10 +53,10 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-2xl tracking-wider text-white">AMR</span>
-                  <span className="font-bold text-xl tracking-wide bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">COMPUTERS</span>
+                  <span className="font-extrabold text-xl sm:text-2xl tracking-wider text-white">AMR</span>
+                  <span className="font-bold text-base sm:text-xl tracking-wide bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">COMPUTERS</span>
                 </div>
-                <p className="text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
+                <p className="text-[8px] sm:text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
                   Custom Rigs & Tech Studio
                 </p>
               </div>
