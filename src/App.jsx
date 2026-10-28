@@ -10,6 +10,8 @@ import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AdminModal } from './components/AdminModal';
 import { ToastNotification } from './components/ToastNotification';
+import { useCart } from './context/useCart';
+import { useProducts } from './context/useProducts';
 
 const getPageFromHash = () => {
   const route = window.location.hash.replace('#', '').split('?')[0];
@@ -20,6 +22,8 @@ const getPageFromHash = () => {
 export function AppContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(getPageFromHash);
+  const { isCartOpen, closeCart, isCheckoutOpen, closeCheckout } = useCart();
+  const { isAdminOpen, closeAdmin } = useProducts();
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -29,6 +33,30 @@ export function AppContent() {
     window.addEventListener('hashchange', handleRouteChange);
     return () => window.removeEventListener('hashchange', handleRouteChange);
   }, []);
+
+  // Keep Android/mobile browser Back inside the storefront first:
+  // close overlays, return to Products from a secondary page, and only
+  // then keep the root storefront open instead of exiting the browser.
+  useEffect(() => {
+    window.history.pushState({ amrStorefront: true }, '', window.location.href);
+
+    const handleBackButton = () => {
+      if (isCheckoutOpen) {
+        closeCheckout();
+      } else if (isCartOpen) {
+        closeCart();
+      } else if (isAdminOpen) {
+        closeAdmin();
+      } else if (page !== 'products') {
+        window.location.hash = '#products';
+      }
+
+      window.history.pushState({ amrStorefront: true }, '', window.location.href);
+    };
+
+    window.addEventListener('popstate', handleBackButton);
+    return () => window.removeEventListener('popstate', handleBackButton);
+  }, [isCheckoutOpen, closeCheckout, isCartOpen, closeCart, isAdminOpen, closeAdmin, page]);
 
   const handleSearchChange = (term) => {
     setSearchTerm(term);
