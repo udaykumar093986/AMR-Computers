@@ -262,14 +262,19 @@ export const AdminModal = () => {
     setInlinePriceEditId(null);
   };
 
-  // Handle Add Category
-  const handleAddCategory = (e) => {
+  // Handle Add Category — only report success after Firestore confirms the write.
+  const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    const added = addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
-    showNotification(`Category "${added.name}" added!`, 'success');
-    setNewCategoryName('');
-    setNewCategoryImage('');
+    try {
+      const added = await addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
+      showNotification(`Category "${added.name}" saved to Firebase!`, 'success');
+      setNewCategoryName('');
+      setNewCategoryImage('');
+    } catch (error) {
+      console.error('[AMR Computers] Category save failed:', error?.code || error?.message || error);
+      showNotification('Category was not saved to Firebase. Check Firestore permissions and try again.', 'error');
+    }
   };
 
   // Filter products defensively: Firestore documents may omit optional fields.
@@ -1133,9 +1138,13 @@ export const AdminModal = () => {
                           {cat.id !== 'all' && (
                             <button
                               onClick={() => {
-                                if (window.confirm(`Delete category "${cat.name}"?`)) {
-                                  deleteCategory(cat.id);
-                                  showNotification(`Category "${cat.name}" removed`, 'info');
+                                if (window.confirm(`Delete category "${cat.name}" from Firebase? Products assigned to this category will not be deleted.`)) {
+                                  deleteCategory(cat.id)
+                                    .then(() => showNotification(`Category "${cat.name}" deleted from Firebase.`, 'success'))
+                                    .catch((error) => {
+                                      console.error('[AMR Computers] Category delete failed:', error?.code || error?.message || error);
+                                      showNotification('Category was not deleted from Firebase. Check Firestore permissions and try again.', 'error');
+                                    });
                                 }
                               }}
                               className="text-slate-500 hover:text-rose-400 p-1"
