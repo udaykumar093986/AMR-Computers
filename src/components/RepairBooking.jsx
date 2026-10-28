@@ -386,10 +386,11 @@ export const RepairBooking = () => {
 
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
+                      disabled={isSavingBooking}
+                      className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
                     >
                       <Send className="w-4 h-4" />
-                      <span>Confirm Service Appointment</span>
+                      <span>{isSavingBooking ? 'Saving booking…' : 'Confirm Service Appointment'}</span>
                     </button>
                   </div>
                 </form>
