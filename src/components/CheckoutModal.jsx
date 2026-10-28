@@ -51,13 +51,28 @@ export const CheckoutModal = () => {
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
 
-    if (!shippingData.fullName || !shippingData.phone || !shippingData.address || !shippingData.pincode) {
-      showNotification('Please fill in all required shipping fields', 'error');
+    if (isSavingOrder) return;
+    if (!Array.isArray(cart) || cart.length === 0) {
+      showNotification('Your cart is empty. Add products before placing an order.', 'error');
       return;
     }
-    if (isSavingOrder) return;
+    if (!shippingData.fullName.trim() || !shippingData.phone.trim() || !shippingData.address.trim() || !shippingData.city.trim() || !shippingData.pincode.trim()) {
+      showNotification('Please fill in all required contact and delivery fields.', 'error');
+      return;
+    }
 
-    const orderId = `AMR-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+    const normalizedPhone = shippingData.phone.replace(/[\\s()-]/g, '').replace(/^\\+?91/, '');
+    if (!/^[6-9]\\d{9}$/.test(normalizedPhone)) {
+      showNotification('Enter a valid 10-digit Indian mobile number.', 'error');
+      return;
+    }
+    if (!/^\\d{6}$/.test(shippingData.pincode.trim())) {
+      showNotification('Enter a valid 6-digit PIN code.', 'error');
+      return;
+    }
+
+    // Timestamp plus random suffix avoids overwriting an existing order reference.
+    const orderId = `AMR-ORD-${Date.now().toString().slice(-8)}${Math.floor(100 + Math.random() * 900)}`;
     const completedOrder = {
       orderId,
       items: [...cart],
@@ -128,13 +143,13 @@ export const CheckoutModal = () => {
 
               <div>
                 <span className="text-xs uppercase font-bold text-cyan-400 tracking-wider">
-                  Payment & Order Authorized
+                  Order Request Received
                 </span>
                 <h3 className="text-2xl font-extrabold text-white mt-1">
                   Thank You For Your Order!
                 </h3>
                 <p className="text-xs text-slate-400 mt-2 max-w-md mx-auto">
-                  Your hardware order has been verified. A tracking number and tax invoice will be sent via SMS/WhatsApp to {orderCompleted.shipping.phone}.
+                  Your order request has been saved. AMR Computers will confirm product availability, delivery details, and payment arrangements via WhatsApp or phone at {orderCompleted.shipping.phone}. No online payment was processed by this website.
                 </p>
               </div>
 
@@ -168,7 +183,7 @@ export const CheckoutModal = () => {
                 </div>
 
                 <div className="border-t border-slate-800 pt-3 flex justify-between items-baseline">
-                  <span className="text-xs font-bold text-slate-300">Total Paid / Due:</span>
+                  <span className="text-xs font-bold text-slate-300">Order Total (not charged online):</span>
                   <span className="text-xl font-extrabold text-cyan-400 font-mono">
                     {formatPrice(orderCompleted.total)}
                   </span>
@@ -382,8 +397,8 @@ export const CheckoutModal = () => {
                       className="sr-only"
                     />
                     <QrCode className="w-5 h-5 text-emerald-400" />
-                    <span className="text-xs font-bold text-white">UPI QR / Apps</span>
-                    <span className="text-[9px] text-slate-400">GPay, PhonePe, Paytm</span>
+                    <span className="text-xs font-bold text-white">UPI (arrange with store)</span>
+                    <span className="text-[9px] text-slate-400">No online payment gateway</span>
                   </label>
 
                   <label
@@ -402,8 +417,8 @@ export const CheckoutModal = () => {
                       className="sr-only"
                     />
                     <CreditCard className="w-5 h-5 text-cyan-400" />
-                    <span className="text-xs font-bold text-white">Cards / Netbanking</span>
-                    <span className="text-[9px] text-slate-400">Debit, Credit & EMI</span>
+                    <span className="text-xs font-bold text-white">Card / Netbanking</span>
+                    <span className="text-[9px] text-slate-400">Confirm payment with store</span>
                   </label>
 
                   <label
@@ -431,7 +446,7 @@ export const CheckoutModal = () => {
               {/* Order Final Summary */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-slate-400 block">Total Amount to Pay:</span>
+                  <span className="text-xs text-slate-400 block">Order total (no online charge):</span>
                   <span className="text-2xl font-extrabold text-cyan-400 font-mono">
                     {formatPrice(total)}
                   </span>
@@ -442,7 +457,7 @@ export const CheckoutModal = () => {
                   disabled={isSavingOrder}
                   className="py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20"
                 >
-                  <span>{isSavingOrder ? 'Saving order…' : 'Authorize & Place Order'}</span>
+                  <span>{isSavingOrder ? 'Saving order…' : 'Place Order'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
