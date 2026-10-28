@@ -40,14 +40,13 @@ export const CheckoutModal = () => {
   });
 
   const [orderCompleted, setOrderCompleted] = useState(null);
-
-  if (!isCheckoutOpen) return null;
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const handleChange = (e) => {
     setShippingData({ ...shippingData, [e.target.name]: e.target.value });
   };
 
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  if (!isCheckoutOpen) return null;
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
