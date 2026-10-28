@@ -1193,7 +1193,15 @@ export const AdminModal = () => {
                               <span className="text-[11px] text-slate-400 ml-2">Date: {ord.date || '—'}</span>
                               <div className="mt-2">
                                 <label className="text-[10px] text-slate-400 mr-2" htmlFor={`order-status-${ord.orderId || idx}`}>Status</label>
-                                <select id={`order-status-${ord.orderId || idx}`} value={ord.status || 'Pending'} onChange={(e) => updateOrder(ord.id || ord.orderId || idx, { status: e.target.value })} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                <select id={`order-status-${ord.orderId || idx}`} value={ord.status || 'Pending'} onChange={async (e) => {
+                                  try {
+                                    await updateOrder(ord.id || ord.orderId || idx, { status: e.target.value });
+                                    showNotification('Order status saved to Firebase.', 'success');
+                                  } catch (error) {
+                                    console.error('[AMR Computers] Order status update failed:', error?.code || error?.message || error);
+                                    showNotification('Order status could not be saved to Firebase.', 'error');
+                                  }
+                                }} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
                                   <option value="Pending">Pending</option>
                                   <option value="Confirmed">Confirmed</option>
                                   <option value="Delivered">Delivered</option>
@@ -1205,7 +1213,16 @@ export const AdminModal = () => {
                                 <span className="text-sm font-bold text-white font-mono">Total: {formatPrice(ord.total)}</span>
                                 <span className="text-[10px] text-emerald-400 ml-2 uppercase font-semibold">{ord.shipping?.paymentMethod}</span>
                               </div>
-                              <button type="button" onClick={() => { if (window.confirm(`Delete order ${ord.orderId || ''}?`)) { deleteOrder(ord.id || ord.orderId || idx); showNotification('Order deleted.', 'success'); } }} className="p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10" title="Delete order" aria-label="Delete order">
+                              <button type="button" onClick={async () => {
+                                 if (!window.confirm(`Delete order ${ord.orderId || ''} from Firebase?`)) return;
+                                 try {
+                                   await deleteOrder(ord.id || ord.orderId || idx);
+                                   showNotification('Order deleted from Firebase.', 'success');
+                                 } catch (error) {
+                                   console.error('[AMR Computers] Order delete failed:', error?.code || error?.message || error);
+                                   showNotification('Order could not be deleted from Firebase.', 'error');
+                                 }
+                               }} className="p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10" title="Delete order" aria-label="Delete order">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
@@ -1271,14 +1288,31 @@ export const AdminModal = () => {
                               <span className="text-emerald-400 font-semibold ml-2">{t.mode}</span>
                               <div className="mt-2 flex items-center gap-2">
                                 <label className="text-[10px] text-slate-400" htmlFor={`repair-status-${t.ticketId || idx}`}>Status</label>
-                                <select id={`repair-status-${t.ticketId || idx}`} value={t.status || 'Pending'} onChange={(e) => updateTicket(t.id || t.ticketId || idx, { status: e.target.value })} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                <select id={`repair-status-${t.ticketId || idx}`} value={t.status || 'Pending'} onChange={async (e) => {
+                                  try {
+                                    await updateTicket(t.id || t.ticketId || idx, { status: e.target.value });
+                                    showNotification('Repair status saved to Firebase.', 'success');
+                                  } catch (error) {
+                                    console.error('[AMR Computers] Repair status update failed:', error?.code || error?.message || error);
+                                    showNotification('Repair status could not be saved to Firebase.', 'error');
+                                  }
+                                }} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
                                   <option value="Pending">Pending</option>
                                   <option value="Confirmed">Confirmed</option>
                                   <option value="Delivered">Delivered</option>
                                 </select>
                               </div>
                             </div>
-                            <button type="button" onClick={() => { if (window.confirm(`Delete repair request ${t.ticketId || ''}?`)) { deleteTicket(t.id || t.ticketId || idx); showNotification('Repair request deleted.', 'success'); } }} className="self-start p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10" title="Delete repair request" aria-label="Delete repair request">
+                            <button type="button" onClick={async () => {
+                                 if (!window.confirm(`Delete repair request ${t.ticketId || ''} from Firebase?`)) return;
+                                 try {
+                                   await deleteTicket(t.id || t.ticketId || idx);
+                                   showNotification('Repair request deleted from Firebase.', 'success');
+                                 } catch (error) {
+                                   console.error('[AMR Computers] Repair delete failed:', error?.code || error?.message || error);
+                                   showNotification('Repair request could not be deleted from Firebase.', 'error');
+                                 }
+                               }} className="self-start p-2 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10" title="Delete repair request" aria-label="Delete repair request">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
