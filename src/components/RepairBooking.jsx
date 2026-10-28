@@ -33,7 +33,8 @@ export const RepairBooking = () => {
   const [submittedBooking, setSubmittedBooking] = useState(null);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
   const handleSelectServiceFromCard = (serviceTitle) => {
@@ -167,7 +168,7 @@ export const RepairBooking = () => {
 
         {/* Interactive Service Booking Form Anchor */}
         <div id="booking-form-anchor" className="max-w-4xl mx-auto">
-          <div className="bg-slate-900 rounded-3xl border border-slate-800 p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+          <div className="bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-800 p-4 sm:p-10 shadow-2xl relative overflow-hidden">
             {/* Background glow accent */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -239,7 +240,7 @@ export const RepairBooking = () => {
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">
                       Schedule a Diagnostic / Repair Session
                     </h3>
                     <p className="text-xs text-slate-400">
@@ -248,8 +249,8 @@ export const RepairBooking = () => {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="min-w-0 space-y-4">
+                  <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                         Your Full Name *
@@ -271,6 +272,8 @@ export const RepairBooking = () => {
                       </label>
                       <input
                         type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
@@ -281,7 +284,7 @@ export const RepairBooking = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid min-w-0 grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                         Device Type
