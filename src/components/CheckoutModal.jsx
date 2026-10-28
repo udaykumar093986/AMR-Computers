@@ -133,7 +133,7 @@ export const CheckoutModal = () => {
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto">
+        <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto overscroll-contain">
           {orderCompleted ? (
             /* Order Success View */
             <div className="space-y-6 text-center py-4 animate-fade-in">
