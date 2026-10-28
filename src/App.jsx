@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CartProvider } from './context/CartContext';
 import { ProductProvider } from './context/ProductContext';
 import { Navbar } from './components/Navbar';
@@ -34,6 +34,14 @@ export function AppContent() {
     return () => window.removeEventListener('hashchange', handleRouteChange);
   }, []);
 
+  const backStateRef = useRef({});
+  backStateRef.current = {
+    isCheckoutOpen, closeCheckout,
+    isCartOpen, closeCart,
+    isAdminOpen, closeAdmin,
+    page
+  };
+
   // Keep Android/mobile browser Back inside the storefront first:
   // close overlays, return to Products from a secondary page, and only
   // then keep the root storefront open instead of exiting the browser.
@@ -41,13 +49,14 @@ export function AppContent() {
     window.history.pushState({ amrStorefront: true }, '', window.location.href);
 
     const handleBackButton = () => {
-      if (isCheckoutOpen) {
-        closeCheckout();
-      } else if (isCartOpen) {
-        closeCart();
-      } else if (isAdminOpen) {
-        closeAdmin();
-      } else if (page !== 'products') {
+      const current = backStateRef.current;
+      if (current.isCheckoutOpen) {
+        current.closeCheckout();
+      } else if (current.isCartOpen) {
+        current.closeCart();
+      } else if (current.isAdminOpen) {
+        current.closeAdmin();
+      } else if (current.page !== 'products') {
         window.location.hash = '#products';
       }
 
@@ -56,7 +65,7 @@ export function AppContent() {
 
     window.addEventListener('popstate', handleBackButton);
     return () => window.removeEventListener('popstate', handleBackButton);
-  }, [isCheckoutOpen, closeCheckout, isCartOpen, closeCart, isAdminOpen, closeAdmin, page]);
+  }, []);
 
   const handleSearchChange = (term) => {
     setSearchTerm(term);
