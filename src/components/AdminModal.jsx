@@ -477,7 +477,7 @@ export const AdminModal = () => {
                   }`}
                 >
                   <Layers className="w-4 h-4 shrink-0" />
-                  <span className="whitespace-nowrap">Categories ({categories.length - 1})</span>
+                  <span className="whitespace-nowrap">Categories ({categories.filter((category) => category.id !== 'all').length})</span>
                 </button>
 
                 <button
