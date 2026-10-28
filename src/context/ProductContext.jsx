@@ -334,6 +334,13 @@ export const ProductProvider = ({ children }) => {
     setCategories((prev) => prev.filter((category) => category.id !== id));
   };
 
+  const updateCategoryImage = async (id, image) => {
+    if (!db) throw new Error('Firebase is not configured. Category image was not saved.');
+    if (!id || id === 'all') throw new Error('This category cannot be updated.');
+    await updateDoc(doc(db, 'categories', id), { image });
+    setCategories((prev) => prev.map((category) => category.id === id ? { ...category, image } : category));
+  };
+
   const addOrder = async (order) => {
     if (!db) throw new Error('Firebase is unavailable. Order was not saved.');
     const id = String(order.orderId || `order-${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '-');
@@ -403,7 +410,7 @@ export const ProductProvider = ({ children }) => {
   const contextValue = {
     products, categories, orders, tickets,
     addProduct, updateProduct, deleteProduct, toggleStock, deductStock,
-    addCategory, deleteCategory, addOrder, updateOrder, deleteOrder,
+    addCategory, deleteCategory, updateCategoryImage, addOrder, updateOrder, deleteOrder,
     addTicket, updateTicket, deleteTicket, resetToDefaults,
     isAdminOpen, openAdmin, closeAdmin,
     isAdminAuthenticated, authLoading, authUser, loginAdmin, logoutAdmin
