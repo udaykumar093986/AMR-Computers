@@ -8,7 +8,8 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  getDoc
+  getDoc,
+  writeBatch
 } from 'firebase/firestore';
 import {
   signInWithEmailAndPassword,
@@ -113,6 +114,29 @@ export const ProductProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (!db) return undefined;
+
+    const unsubscribe = onSnapshot(
+      collection(db, 'categories'),
+      (snapshot) => {
+        // An empty collection must not erase the existing browser category list.
+        // The first Admin category save migrates these categories in one atomic batch.
+        if (snapshot.empty) return;
+        const cloudCategories = snapshot.docs.map((categoryDoc) => ({
+          ...categoryDoc.data(),
+          id: categoryDoc.id,
+          name: typeof categoryDoc.data().name === 'string' ? categoryDoc.data().name : categoryDoc.id,
+          icon: categoryDoc.data().icon || 'Sparkles'
+        }));
+        setCategories(cloudCategories);
+      },
+      (error) => console.warn('[AMR Computers] Categories subscription failed:', error)
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (!auth) {
       setAuthLoading(false);
       return undefined;
@@ -188,18 +212,46 @@ export const ProductProvider = ({ children }) => {
     }
   };
 
-  const addCategory = (category) => {
+  const addCategory = async (category) => {
     const newCategory = {
       id: category.id || category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name: category.name,
-      icon: category.icon || 'Sparkles'
+      icon: category.icon || 'Sparkles',
+      ...(category.image ? { image: category.image } : {})
     };
-    setCategories((prev) => [...prev, newCategory]);
+
+    if (!db) throw new Error('Firebase is not configured. Category was not saved.');
+
+    // Migrate the existing browser categories and add the new category atomically.
+    // Stable document IDs make this safe to retry without creating duplicates.
+    const batch = writeBatch(db);
+    categories.forEach((existingCategory) => {
+      if (!existingCategory?.id || existingCategory.id === 'all') return;
+      batch.set(doc(db, 'categories', existingCategory.id), {
+        name: existingCategory.name || existingCategory.id,
+        icon: existingCategory.icon || 'Sparkles',
+        ...(existingCategory.image ? { image: existingCategory.image } : {})
+      }, { merge: true });
+    });
+    batch.set(doc(db, 'categories', newCategory.id), {
+      name: newCategory.name,
+      icon: newCategory.icon,
+      ...(newCategory.image ? { image: newCategory.image } : {})
+    }, { merge: true });
+    await batch.commit();
+
+    setCategories((prev) => {
+      const withoutDuplicate = prev.filter((item) => item.id !== newCategory.id);
+      return [...withoutDuplicate, newCategory];
+    });
     return newCategory;
   };
 
-  const deleteCategory = (id) => {
-    if (id !== 'all') setCategories((prev) => prev.filter((category) => category.id !== id));
+  const deleteCategory = async (id) => {
+    if (id === 'all') return;
+    if (!db) throw new Error('Firebase is not configured. Category was not deleted.');
+    await deleteDoc(doc(db, 'categories', id));
+    setCategories((prev) => prev.filter((category) => category.id !== id));
   };
 
   const addOrder = (order) => setOrders((prev) => [order, ...prev]);
