@@ -43,7 +43,8 @@ export const CheckoutModal = () => {
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   const handleChange = (e) => {
-    setShippingData({ ...shippingData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setShippingData((previous) => ({ ...previous, [name]: value }));
   };
 
   if (!isCheckoutOpen) return null;
@@ -133,7 +134,7 @@ export const CheckoutModal = () => {
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto overscroll-contain">
+        <div className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto overscroll-contain [overflow-anchor:none]">
           {orderCompleted ? (
             /* Order Success View */
             <div className="space-y-6 text-center py-4 animate-fade-in">
@@ -225,7 +226,7 @@ export const CheckoutModal = () => {
             </div>
           ) : (
             /* Checkout Form */
-            <form onSubmit={handlePlaceOrder} className="space-y-6">
+            <form onSubmit={handlePlaceOrder} className="flex min-h-0 flex-col gap-4 sm:gap-6">
               
               {/* Delivery Option Selector */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
