@@ -61,7 +61,10 @@ export function AppContent() {
       } else if (current.isAdminOpen) {
         current.closeAdmin();
       } else if (current.page !== 'products') {
-        window.location.hash = '#products';
+        // Let normal browser history return from About, Contact, or Repair to
+        // the page the visitor came from. Forcing #products here can hijack
+        // navigation and unexpectedly redirect secondary pages.
+        return;
       }
 
       window.history.pushState({ amrStorefront: true }, '', window.location.href);
