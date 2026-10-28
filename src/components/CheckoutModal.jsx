@@ -440,9 +440,10 @@ export const CheckoutModal = () => {
 
                 <button
                   type="submit"
-                  className="py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                  disabled={isSavingOrder}
+                  className="py-3 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-cyan-500/20"
                 >
-                  <span>Authorize & Place Order</span>
+                  <span>{isSavingOrder ? 'Saving order…' : 'Authorize & Place Order'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
