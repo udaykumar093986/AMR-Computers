@@ -305,10 +305,25 @@ export const CheckoutModal = () => {
                       name="phone"
                       value={shippingData.phone}
                       onChange={handleChange}
-                      placeholder="e.g. +91 97007 68383"
+                      placeholder="Enter 10-digit mobile number"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      maxLength={16}
+                      aria-invalid={shippingData.phone.length > 0 && !/^[6-9]\\d{9}$/.test(shippingData.phone.replace(/[\\s()-]/g, '').replace(/^\\+?91/, ''))}
+                      aria-describedby="checkout-phone-hint"
                       required
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className={`w-full px-3 py-2 rounded-xl bg-slate-950 border text-xs text-white focus:outline-none focus:border-cyan-500 ${shippingData.phone.length > 0 && !/^[6-9]\\d{9}$/.test(shippingData.phone.replace(/[\\s()-]/g, '').replace(/^\\+?91/, '')) ? 'border-rose-500' : 'border-slate-800'}`}
                     />
+                    {shippingData.phone.length > 0 && !/^[6-9]\\d{9}$/.test(shippingData.phone.replace(/[\\s()-]/g, '').replace(/^\\+?91/, '')) && (
+                      <p id="checkout-phone-hint" className="mt-1.5 text-[11px] font-medium text-rose-400" role="alert">
+                        Enter a valid 10-digit Indian mobile number.
+                      </p>
+                    )}
+                    {(!shippingData.phone || /^[6-9]\\d{9}$/.test(shippingData.phone.replace(/[\\s()-]/g, '').replace(/^\\+?91/, ''))) && (
+                      <p id="checkout-phone-hint" className="mt-1.5 text-[11px] text-slate-500">
+                        Enter a valid 10-digit Indian mobile number.
+                      </p>
+                    )}
                   </div>
                 </div>
 
