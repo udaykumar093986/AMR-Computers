@@ -395,7 +395,7 @@ export const CheckoutModal = () => {
                   Select Payment Method
                 </h3>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <label
                     className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center transition-all ${
                       shippingData.paymentMethod === 'upi'
