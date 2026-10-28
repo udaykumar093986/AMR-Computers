@@ -112,11 +112,11 @@ export const CheckoutModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden my-8 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-1 sm:my-8 max-h-[96dvh] sm:max-h-[92vh] flex flex-col">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
           <div className="flex items-center gap-2">
             <PackageCheck className="w-5 h-5 text-cyan-400" />
             <h2 className="text-lg font-bold text-white">
@@ -133,7 +133,7 @@ export const CheckoutModal = () => {
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-4 sm:p-6 overflow-y-auto">
           {orderCompleted ? (
             /* Order Success View */
             <div className="space-y-6 text-center py-4 animate-fade-in">
@@ -228,7 +228,7 @@ export const CheckoutModal = () => {
             <form onSubmit={handlePlaceOrder} className="space-y-6">
               
               {/* Delivery Option Selector */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label
                   className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
                     shippingData.deliveryType === 'express'
@@ -342,7 +342,7 @@ export const CheckoutModal = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                       City *
