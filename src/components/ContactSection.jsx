@@ -80,7 +80,7 @@ export const ContactSection = () => {
                     <strong className="text-white block text-sm">Store Address:</strong>
                     <span>{STORE_INFO.address.shop},</span>
                     <span className="block text-slate-400">{STORE_INFO.address.landmark},</span>
-                    <span className="text-slate-200 font-semibold">{STORE_INFO.address.city}, {STORE_INFO.address.state} - {STORE_INFO.address.pincode}</span>
+                    <span className="text-slate-200 font-semibold">{STORE_INFO.address.city}{STORE_INFO.address.state ? `, ${STORE_INFO.address.state}` : ''}{STORE_INFO.address.pincode ? ` - ${STORE_INFO.address.pincode}` : ''}</span>
                   </div>
                 </div>
 
