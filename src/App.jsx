@@ -21,6 +21,7 @@ const getPageFromHash = () => {
 
 export function AppContent() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [page, setPage] = useState(getPageFromHash);
   const { isCartOpen, closeCart, isCheckoutOpen, closeCheckout } = useCart();
   const { isAdminOpen, closeAdmin } = useProducts();
@@ -74,6 +75,15 @@ export function AppContent() {
     return () => window.removeEventListener('popstate', handleBackButton);
   }, []);
 
+  const handleToggleSearch = () => {
+    setIsSearchOpen(true);
+    if (page !== 'products') window.location.hash = '#products';
+    else {
+      const shopEl = document.getElementById('shop');
+      if (shopEl) shopEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleSearchChange = (term) => {
     setSearchTerm(term);
     if (term.trim().length > 1 && page !== 'products') {
@@ -87,12 +97,12 @@ export function AppContent() {
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans">
       <ToastNotification />
-      <Navbar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+      <Navbar onToggleSearch={handleToggleSearch} />
       <main className="flex-grow">
         {page === 'repair' ? <RepairBooking /> : null}
         {page === 'about' ? <AboutPage /> : null}
         {page === 'contact' ? <ContactSection /> : null}
-        {page === 'products' ? <ProductCatalog searchTerm={searchTerm} setSearchTerm={setSearchTerm} /> : null}
+        {page === 'products' ? <ProductCatalog searchTerm={searchTerm} setSearchTerm={setSearchTerm} isSearchOpen={isSearchOpen} /> : null}
       </main>
       <CartDrawer />
       <CheckoutModal />
