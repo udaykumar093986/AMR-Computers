@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/useCart';
 import { useProducts } from '../context/useProducts';
 import { STORE_INFO } from '../data/storeInfo';
@@ -18,6 +18,8 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
   const { openAdmin } = useProducts();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -101,17 +103,35 @@ export const Navbar = ({ onSearchChange, searchTerm }) => {
                 <span>Admin</span>
               </button>
 
-              {/* Search bar beside the cart on desktop and mobile */}
-              <div className="relative min-w-0">
-                <input
-                  type="search"
-                  aria-label="Search products"
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-[76px] xs:w-24 sm:w-32 md:w-40 lg:w-48 pl-7 sm:pl-8 pr-2 py-2 bg-slate-900 border border-slate-800 rounded-full text-[11px] sm:text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-all"
-                />
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2 sm:left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {/* Expandable product search, opened by the search icon */}
+              <div className="flex items-center gap-1">
+                {isSearchOpen && (
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    aria-label="Search products"
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="w-28 sm:w-40 md:w-48 px-3 py-2 bg-slate-900 border border-slate-700 rounded-full text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isSearchOpen) {
+                      setIsSearchOpen(false);
+                    } else {
+                      setIsSearchOpen(true);
+                      requestAnimationFrame(() => searchInputRef.current?.focus());
+                    }
+                  }}
+                  className="flex items-center justify-center p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-200 hover:text-cyan-400 transition-colors"
+                  aria-label={isSearchOpen ? 'Close product search' : 'Open product search'}
+                  title={isSearchOpen ? 'Close search' : 'Search products'}
+                >
+                  {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+                </button>
               </div>
 
               {/* Cart Drawer Trigger */}
