@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useProducts } from '../context/useProducts';
 import { useCart } from '../context/useCart';
 import { ProductModal } from './ProductModal';
@@ -26,7 +26,7 @@ const Microchip = ({ className = 'w-4 h-4' }) => (
   </svg>
 );
 
-export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
+export const ProductCatalog = ({ searchTerm = '', setSearchTerm, isSearchOpen = false }) => {
   const { products = [], categories = [] } = useProducts();
   const { addToCart, formatPrice } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -34,6 +34,11 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
   const [sortBy, setSortBy] = useState('featured');
   const [activeModalProduct, setActiveModalProduct] = useState(null);
   const [addedAnimationId, setAddedAnimationId] = useState(null);
+  const catalogSearchRef = useRef(null);
+
+  useEffect(() => {
+    if (isSearchOpen) catalogSearchRef.current?.focus();
+  }, [isSearchOpen]);
 
   useEffect(() => {
     const restoreCatalogView = (event) => {
@@ -154,6 +159,20 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white">Hardware &amp; Systems Catalog</h2>
             <p className="text-sm text-slate-400 mt-2 max-w-xl">Explore quality computer spare parts, OEM components, and essential accessories backed by AMR’s comprehensive product support.</p>
+            {isSearchOpen && (
+              <div className="relative mt-5 w-full max-w-xl">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  ref={catalogSearchRef}
+                  type="search"
+                  aria-label="Search products"
+                  placeholder="Search products and accessories..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm?.(event.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300">
