@@ -47,13 +47,16 @@ export const CheckoutModal = () => {
     setShippingData({ ...shippingData, [e.target.name]: e.target.value });
   };
 
-  const handlePlaceOrder = (e) => {
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
 
     if (!shippingData.fullName || !shippingData.phone || !shippingData.address || !shippingData.pincode) {
       showNotification('Please fill in all required shipping fields', 'error');
       return;
     }
+    if (isSavingOrder) return;
 
     const orderId = `AMR-ORD-${Math.floor(100000 + Math.random() * 900000)}`;
     const completedOrder = {
@@ -61,6 +64,7 @@ export const CheckoutModal = () => {
       items: [...cart],
       total,
       shipping: { ...shippingData },
+      status: 'Pending',
       date: new Date().toLocaleDateString('en-IN', {
         day: 'numeric',
         month: 'short',
@@ -68,11 +72,19 @@ export const CheckoutModal = () => {
       })
     };
 
-    setOrderCompleted(completedOrder);
-    addOrder(completedOrder);
-    deductStock(completedOrder.items);
-    clearCart();
-    showNotification(`Order placed successfully! Reference #${orderId}`, 'success');
+    setIsSavingOrder(true);
+    try {
+      await addOrder(completedOrder);
+      setOrderCompleted(completedOrder);
+      await deductStock(completedOrder.items);
+      clearCart();
+      showNotification(`Order saved to Firebase! Reference #${orderId}`, 'success');
+    } catch (error) {
+      console.error('[AMR Computers] Order save failed:', error?.code || error?.message || error);
+      showNotification('Order could not be saved. Your cart is unchanged; please try again.', 'error');
+    } finally {
+      setIsSavingOrder(false);
+    }
   };
 
   const shareOrderWhatsApp = () => {
