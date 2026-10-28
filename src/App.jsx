@@ -57,12 +57,46 @@ export function AppContent() {
   );
 }
 
+class AppRenderErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    console.error('[AMR Computers] A rendering error occurred:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+          <section className="max-w-xl text-center">
+            <div className="text-cyan-400 text-sm font-semibold tracking-widest uppercase mb-3">AMR Computers</div>
+            <h1 className="text-3xl font-bold mb-4">We’re fixing a temporary display issue.</h1>
+            <p className="text-slate-300 mb-6">The page encountered an unexpected error. Please refresh the website. If the problem continues, open the browser console and share the first red error message with support.</p>
+            <button type="button" onClick={() => window.location.reload()} className="rounded-xl bg-cyan-400 px-5 py-3 font-semibold text-slate-950 hover:bg-cyan-300">Refresh website</button>
+          </section>
+        </main>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <ProductProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-    </ProductProvider>
+    <AppRenderErrorBoundary>
+      <ProductProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </ProductProvider>
+    </AppRenderErrorBoundary>
   );
 }
