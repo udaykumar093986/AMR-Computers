@@ -2,38 +2,46 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
-export const ProductContext = createContext<any>(null);
+export const ProductContext = createContext(null);
 
-export const ProductProvider = ({ children }: { children: React.ReactNode }) => {
-  const [products, setProducts] = useState<any[]>([]);
+export const ProductProvider = ({ children }) => {
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    // CRITICAL FIX: If db is null (no Firebase keys), DO NOT call collection(db)!
+    // 1. Guard check: If db is null (no keys), do not call collection(db)
     if (!db) {
-      console.warn('[AMR Computers] Firebase db is null. Loading fallback local catalog.');
+      console.warn('[AMR Computers] Firestore db is null. Loading offline catalog.');
       const local = localStorage.getItem('amr_products');
       if (local) {
-        try { setProducts(JSON.parse(local)); } catch { /* use default */ }
+        try {
+          setProducts(JSON.parse(local));
+        } catch (e) {
+          // ignore parse errors
+        }
       }
       return;
     }
 
-    // Only subscribe to Firestore when db is a valid FirebaseFirestore instance
+    // 2. Only subscribe when db is a valid Firestore instance
     const colRef = collection(db, 'products');
-    const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setProducts(items);
-    }, (error) => {
-      console.warn('[AMR Computers] onSnapshot error:', error);
-    });
+    const unsubscribe = onSnapshot(
+      colRef,
+      (snapshot) => {
+        const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setProducts(items);
+      },
+      (error) => {
+        console.warn('[AMR Computers] Firestore error:', error);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
 
-  const addProduct = async (productData: any) => {
+  const addProduct = async (productData) => {
     if (!db) {
       const newProduct = { ...productData, id: 'local-' + Date.now() };
-      setProducts(prev => [...prev, newProduct]);
+      setProducts((prev) => [...prev, newProduct]);
       return newProduct;
     }
     const colRef = collection(db, 'products');
