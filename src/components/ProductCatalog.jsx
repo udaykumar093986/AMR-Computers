@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useProducts } from '../context/useProducts';
 import { useCart } from '../context/useCart';
 import { ProductModal } from './ProductModal';
@@ -34,6 +34,24 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
   const [sortBy, setSortBy] = useState('featured');
   const [activeModalProduct, setActiveModalProduct] = useState(null);
   const [addedAnimationId, setAddedAnimationId] = useState(null);
+
+  useEffect(() => {
+    const restoreCatalogView = (event) => {
+      const state = event.state;
+      if (state?.amrCatalogView === 'company') {
+        setSelectedCategory(state.categoryId || '');
+        setSelectedCompany(state.company || '');
+      } else if (state?.amrCatalogView === 'category') {
+        setSelectedCategory(state.categoryId || '');
+        setSelectedCompany('');
+      } else if (state?.amrStorefront) {
+        setSelectedCategory('');
+        setSelectedCompany('');
+      }
+    };
+    window.addEventListener('popstate', restoreCatalogView);
+    return () => window.removeEventListener('popstate', restoreCatalogView);
+  }, []);
 
   const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
   const safeCategories = Array.isArray(categories) ? categories.filter(Boolean) : [];
@@ -157,7 +175,7 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
               const items = safeProducts.filter((product) => matchesCategory(product, category));
               const cover = category.image || items.find((product) => product.image)?.image;
               return (
-                <button key={category.id} onClick={() => { setSelectedCategory(category.id); setSelectedCompany(''); }} className="group text-left overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 hover:border-cyan-400/70 hover:-translate-y-1 transition-all shadow-lg">
+                <button key={category.id} onClick={() => { window.history.pushState({ amrCatalogView: 'category', categoryId: category.id }, '', window.location.href); setSelectedCategory(category.id); setSelectedCompany(''); }} className="group text-left overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 hover:border-cyan-400/70 hover:-translate-y-1 transition-all shadow-lg">
                   <div className="relative h-44 bg-slate-950 overflow-hidden">
                     <img src={cover || 'https://placehold.co/800x500/0f172a/67e8f9?text=AMR+Computers'} alt={category.name || 'Product category'} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent" />
@@ -176,11 +194,11 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
         {selectedCategory && !selectedCompany && !searchTerm && (
           <div>
             <div className="flex items-center justify-between gap-3 mb-6">
-              <div><button onClick={() => { setSelectedCategory(''); setSelectedCompany(''); }} className="text-xs text-cyan-400 hover:underline mb-2">← All categories</button><h3 className="text-2xl font-bold text-white">{safeCategories.find((category) => category.id === selectedCategory)?.name || 'Category'} <span className="text-slate-500">/ Companies</span></h3><p className="text-sm text-slate-400 mt-1">Choose a company to browse its products.</p></div>
+              <div><button onClick={() => window.history.back()} className="text-xs text-cyan-400 hover:underline mb-2">← All categories</button><h3 className="text-2xl font-bold text-white">{safeCategories.find((category) => category.id === selectedCategory)?.name || 'Category'} <span className="text-slate-500">/ Companies</span></h3><p className="text-sm text-slate-400 mt-1">Choose a company to browse its products.</p></div>
             </div>
             {companies.length === 0 ? <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-10 text-center"><p className="text-slate-300">No products or companies have been added to this category yet.</p><button onClick={() => setSelectedCategory('')} className="mt-4 text-cyan-400 text-sm">Back to categories</button></div> : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {companies.map((company) => { const items = categoryProducts.filter((product) => getCompany(product) === company); const cover = items.find((product) => product.companyImage)?.companyImage || items.find((product) => product.image)?.image; return <button key={company} onClick={() => setSelectedCompany(company)} className="group rounded-2xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-cyan-400/70 hover:bg-slate-900/90 transition-all"><div className="h-24 rounded-xl bg-slate-950 overflow-hidden mb-4 flex items-center justify-center">{cover ? <img src={cover} alt={company} className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform" loading="lazy" /> : <span className="text-2xl font-black text-cyan-400">{company.slice(0,2).toUpperCase()}</span>}</div><h4 className="font-bold text-white truncate">{company}</h4><p className="text-xs text-slate-400 mt-1">{items.length} product{items.length === 1 ? '' : 's'}</p></button>; })}
+                {companies.map((company) => { const items = categoryProducts.filter((product) => getCompany(product) === company); const cover = items.find((product) => product.companyImage)?.companyImage || items.find((product) => product.image)?.image; return <button key={company} onClick={() => { window.history.pushState({ amrCatalogView: 'company', categoryId: selectedCategory, company }, '', window.location.href); setSelectedCompany(company); }} className="group rounded-2xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-cyan-400/70 hover:bg-slate-900/90 transition-all"><div className="h-24 rounded-xl bg-slate-950 overflow-hidden mb-4 flex items-center justify-center">{cover ? <img src={cover} alt={company} className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform" loading="lazy" /> : <span className="text-2xl font-black text-cyan-400">{company.slice(0,2).toUpperCase()}</span>}</div><h4 className="font-bold text-white truncate">{company}</h4><p className="text-xs text-slate-400 mt-1">{items.length} product{items.length === 1 ? '' : 's'}</p></button>; })}
               </div>
             )}
           </div>
@@ -188,7 +206,7 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm }) => {
 
         {(selectedCompany || searchTerm) && (
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-            <div><button onClick={() => { if (selectedCompany) setSelectedCompany(''); else { setSelectedCategory(''); setSearchTerm?.(''); } }} className="text-xs text-cyan-400 hover:underline mb-2">← {selectedCompany ? 'Back to companies' : 'All categories'}</button><h3 className="text-2xl font-bold text-white">{selectedCompany || 'Search results'}</h3><p className="text-xs text-slate-400 mt-1">{safeCategories.find((category) => category.id === selectedCategory)?.name || ''}</p></div>
+            <div><button onClick={() => { if (selectedCompany) window.history.back(); else { setSelectedCategory(''); setSearchTerm?.(''); } }} className="text-xs text-cyan-400 hover:underline mb-2">← {selectedCompany ? 'Back to companies' : 'All categories'}</button><h3 className="text-2xl font-bold text-white">{selectedCompany || 'Search results'}</h3><p className="text-xs text-slate-400 mt-1">{safeCategories.find((category) => category.id === selectedCategory)?.name || ''}</p></div>
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300"><SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" /><label htmlFor="sort-select-results" className="text-slate-400">Sort by:</label><select id="sort-select-results" value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="bg-transparent border-none text-white font-medium focus:outline-none cursor-pointer"><option value="featured">Featured First</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="rating">Customer Rating</option></select></div>
           </div>
         )}
