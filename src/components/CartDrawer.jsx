@@ -61,10 +61,10 @@ export const CartDrawer = () => {
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
-        <div className="w-screen max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col">
+        <div className="w-screen max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex h-full min-h-0 flex-col">
           
           {/* Header */}
-          <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+          <div className="shrink-0 p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950">
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-cyan-400" />
               <h2 className="text-lg font-bold text-white">Your Shopping Cart</h2>
@@ -101,7 +101,7 @@ export const CartDrawer = () => {
               </button>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-5 space-y-4">
               {cart.map((item) => (
                 <div
                   key={item.id}
@@ -228,7 +228,7 @@ export const CartDrawer = () => {
 
           {/* Footer Financial Totals & Actions */}
           {cart.length > 0 && (
-            <div className="p-5 border-t border-slate-800 bg-slate-950 space-y-3">
+            <div className="shrink-0 max-h-[48dvh] sm:max-h-none overflow-y-auto sm:overflow-visible p-3 sm:p-5 border-t border-slate-800 bg-slate-950 space-y-2 sm:space-y-3">
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-400">
                   <span>Subtotal:</span>
