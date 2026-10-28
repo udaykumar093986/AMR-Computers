@@ -2,28 +2,25 @@ export const STORE_INFO = {
   name: 'AMR COMPUTERS',
   tagline: 'Custom Rigs & Tech Studio',
   badgeText: 'Epson Certified Channel Partner • Custom PC Specialists • Chip-Level Repairs',
-  phoneDisplay: '+91 97007 68383',
-  phoneCall: '+919700768383',
+  phoneDisplay: '+91 97007 69383',
+  phoneCall: '+919700769383',
   altPhoneDisplay: '+91 85059 37171',
   altPhoneCall: '+918505937171',
-  whatsappNumber: '919700768383',
+  whatsappNumber: '919700769383',
   email: 'amrcomputers2013@gmail.com',
   supportEmail: 'support@amrcomputers.in',
   address: {
-    shop: 'Shop No 2, Sesha Sai Tower, RR Street',
-    landmark: 'GNT Road, Near Nartaki Theatre',
+    shop: 'Shop No. 3, Seshasai Towers',
+    landmark: 'Besides KAC Plaza',
     city: 'Nellore',
     state: 'Andhra Pradesh',
-    pincode: '524001',
-    full: 'Shop No 2, Sesha Sai Tower, RR Street, GNT Road, Near Nartaki Theatre, Nellore, Andhra Pradesh - 524001'
+    pincode: '',
+    full: 'Shop No. 3, Seshasai Towers, Besides KAC Plaza, Nellore'
   },
   maps: {
-    url: 'https://maps.app.goo.gl/qmXDLgSPYKZ4HoLs8',
-    embedUrl: 'https://www.google.com/maps?q=14.455899,79.984183&hl=en&z=17&output=embed',
-    coordinates: {
-      lat: 14.455899,
-      lng: 79.984183
-    }
+    url: 'https://maps.app.goo.gl/KRSrUR3WjQojHbEc7?g_st=aw',
+    embedUrl: 'https://www.google.com/maps?q=Shop%20No.%203%2C%20Seshasai%20Towers%2C%20Besides%20KAC%20Plaza%2C%20Nellore&hl=en&z=16&output=embed',
+    coordinates: null
   },
   operatingHours: {
     weekdays: 'Monday – Saturday: 10:00 AM – 8:30 PM',
