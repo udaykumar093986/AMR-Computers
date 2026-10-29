@@ -39,23 +39,10 @@ export const ProductProvider = ({ children }) => {
     }
   });
 
-  const [orders, setOrders] = useState(() => {
-    try {
-      const saved = localStorage.getItem('amr_orders');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [tickets, setTickets] = useState(() => {
-    try {
-      const saved = localStorage.getItem('amr_tickets');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Customer records must never be hydrated into application state from browser storage.
+  // Legacy localStorage values are read only by the authenticated migration listeners below.
+  const [orders, setOrders] = useState([]);
+  const [tickets, setTickets] = useState([]);
 
   const migratedOrdersRef = useRef(false);
   const migratedTicketsRef = useRef(false);
@@ -73,13 +60,8 @@ export const ProductProvider = ({ children }) => {
     try { localStorage.setItem('amr_categories', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
-  useEffect(() => {
-    try { localStorage.setItem('amr_orders', JSON.stringify(orders)); } catch {}
-  }, [orders]);
-
-  useEffect(() => {
-    try { localStorage.setItem('amr_tickets', JSON.stringify(tickets)); } catch {}
-  }, [tickets]);
+  // Do not persist customer orders or repair bookings to localStorage.
+  // Keep existing legacy keys untouched until a verified migration can preserve their records.
 
   useEffect(() => {
     if (!db) {
