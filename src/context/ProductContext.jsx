@@ -384,14 +384,35 @@ export const ProductProvider = ({ children }) => {
   const closeAdmin = () => setIsAdminOpen(false);
 
   const loginAdmin = async (email, password) => {
-    // Fail closed: never grant administrator access when Firebase Authentication is unavailable.
+    // Fail closed: never grant administrator access when Firebase services are unavailable.
     if (!auth || !db) {
       setIsAdminAuthenticated(false);
+      setAuthUser(null);
       throw new Error('FIREBASE_NOT_CONFIGURED');
     }
+
     const result = await signInWithEmailAndPassword(auth, email.trim(), password);
-    setIsAdminAuthenticated(true);
+    setIsAdminAuthenticated(false);
     setAuthUser(result.user);
+
+    // Authentication proves identity only; the admins/{uid} record must authorize admin access.
+    try {
+      const adminDoc = await getDoc(doc(db, 'admins', result.user.uid));
+      if (!adminDoc.exists() || adminDoc.data().admin !== true) {
+        await signOut(auth);
+        setAuthUser(null);
+        setIsAdminAuthenticated(false);
+        throw new Error('ADMIN_NOT_AUTHORIZED');
+      }
+    } catch (error) {
+      await signOut(auth).catch(() => {});
+      setAuthUser(null);
+      setIsAdminAuthenticated(false);
+      if (error?.message === 'ADMIN_NOT_AUTHORIZED') throw error;
+      throw new Error('ADMIN_VERIFICATION_DENIED');
+    }
+
+    setIsAdminAuthenticated(true);
     return true;
   };
 
