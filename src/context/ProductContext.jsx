@@ -384,9 +384,10 @@ export const ProductProvider = ({ children }) => {
   const closeAdmin = () => setIsAdminOpen(false);
 
   const loginAdmin = async (email, password) => {
-    if (!auth) {
-      setIsAdminAuthenticated(true);
-      return true;
+    // Fail closed: never grant administrator access when Firebase Authentication is unavailable.
+    if (!auth || !db) {
+      setIsAdminAuthenticated(false);
+      throw new Error('FIREBASE_NOT_CONFIGURED');
     }
     const result = await signInWithEmailAndPassword(auth, email.trim(), password);
     setIsAdminAuthenticated(true);
