@@ -188,18 +188,7 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm, isSearchOpen = 
               </form>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
-              <label htmlFor="sort-select" className="text-slate-400">Sort by:</label>
-              <select id="sort-select" value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="bg-transparent border-none text-white font-medium focus:outline-none cursor-pointer">
-                <option value="featured" className="bg-slate-900">Featured First</option>
-                <option value="price-low" className="bg-slate-900">Price: Low to High</option>
-                <option value="price-high" className="bg-slate-900">Price: High to Low</option>
-                <option value="rating" className="bg-slate-900">Customer Rating</option>
-              </select>
-            </div>
-          </div>
+
         </div>
 
         {!searchTerm && !selectedCategory && (
