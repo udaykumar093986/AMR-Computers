@@ -21,13 +21,14 @@ export const BulkProductImport = () => {
   const [importing, setImporting] = useState(false);
   const validCategories = categories.filter((c) => c && c.id !== 'all');
   const [categoryOverrides, setCategoryOverrides] = useState({});
+  const [companyOverrides, setCompanyOverrides] = useState({});
 
   const existingKeys = useMemo(() => new Set(products.map((p) => norm(p.name)+'|'+norm(p.category))), [products]);
   const prepared = useMemo(() => rows.map((r, i) => {
     const catId = categoryOverrides[i] || r.categoryId;
     const cat = validCategories.find((c) => c.id === catId);
-    return { ...r, categoryId: catId, categoryName: cat?.name || r.categoryName, categoryValid: !!cat };
-  }), [rows, categoryOverrides, categories]);
+    return { ...r, categoryId: catId, categoryName: cat?.name || r.categoryName, company: String(companyOverrides[i] ?? r.company ?? 'Other Brands').trim() || 'Other Brands', categoryValid: !!cat };
+  }), [rows, categoryOverrides, companyOverrides, categories]);
 
   const validRows = prepared.filter((r) => r.name && Number.isFinite(r.price) && r.price > 0 && r.categoryValid);
   const duplicateCount = validRows.filter((r) => existingKeys.has(norm(r.name)+'|'+norm(r.categoryId))).length;
@@ -35,7 +36,7 @@ export const BulkProductImport = () => {
 
   const handleFile = async (file) => {
     if (!file) return;
-    setLoading(true); setRows([]); setIssues([]); setCategoryOverrides({});
+    setLoading(true); setRows([]); setIssues([]); setCategoryOverrides({}); setCompanyOverrides({});
     try {
       const buffer = await file.arrayBuffer();
       const XLSX = window.XLSX;
@@ -96,7 +97,7 @@ export const BulkProductImport = () => {
         warranty:r.warranty, badge:r.badge, isFeatured:false, showOnline:r.showOnline
       })));
       showNotification(`Imported ${count} products into Firebase.`, 'success');
-      setRows([]); setIssues([]); setFileName(''); setCategoryOverrides({});
+      setRows([]); setIssues([]); setFileName(''); setCategoryOverrides({}); setCompanyOverrides({});
     } catch (e) {
       showNotification(e?.message === 'ADMIN_LOGIN_REQUIRED' ? 'Please sign in as an administrator.' : 'Import failed. Check Firebase permissions and try again.', 'error');
     } finally { setImporting(false); }
@@ -105,7 +106,7 @@ export const BulkProductImport = () => {
   return <div className="space-y-5 max-w-6xl">
     <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800">
       <h3 className="text-base font-bold text-white flex items-center gap-2"><FileSpreadsheet className="w-5 h-5 text-cyan-400"/>Bulk Product Upload</h3>
-      <p className="mt-2 text-sm text-slate-400">Upload .xlsx or .xls directly. Uses <strong className="text-slate-200">Price with Tax</strong> as the website selling price and imports company names as the company/subcategory grouping.</p>
+      <p className="mt-2 text-sm text-slate-400">Upload .xlsx or .xls directly. Uses <strong className="text-slate-200">Price with Tax</strong> as the website selling price and uses the Company/Brand column to create company groupings under each selected category. You can correct company names in the preview.</p>
       <label className="mt-4 flex flex-col items-center justify-center gap-2 border border-dashed border-cyan-500/40 rounded-xl p-6 text-center cursor-pointer hover:bg-cyan-950/20">
         <Upload className="w-6 h-6 text-cyan-400"/>
         <span className="text-sm font-semibold text-white">{loading ? 'Reading spreadsheet…' : fileName || 'Choose Excel file'}</span>
@@ -123,14 +124,14 @@ export const BulkProductImport = () => {
         <div className="px-4 py-3 bg-slate-950 text-sm font-semibold text-white">Preview (first 25 rows)</div>
         <div className="overflow-x-auto"><table className="w-full text-xs text-left"><thead className="bg-slate-950/70 text-slate-400"><tr>{['Row','Product','Company','Category mapping','Price with Tax','Qty','Online'].map(x=><th key={x} className="px-3 py-2">{x}</th>)}</tr></thead>
         <tbody>{prepared.slice(0,25).map((r,i)=><tr key={i} className="border-t border-slate-800">
-          <td className="px-3 py-2 text-slate-500">{r.sourceRow}</td><td className="px-3 py-2 text-white min-w-48">{r.name||<span className="text-rose-400">Missing name</span>}</td><td className="px-3 py-2 text-slate-300">{r.company}</td>
+          <td className="px-3 py-2 text-slate-500">{r.sourceRow}</td><td className="px-3 py-2 text-white min-w-48">{r.name||<span className="text-rose-400">Missing name</span>}</td><td className="px-3 py-2 min-w-36"><input aria-label={`Company for ${r.name}`} value={r.company} onChange={(e)=>setCompanyOverrides(p=>({...p,[i]:e.target.value}))} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white w-full" /></td>
           <td className="px-3 py-2 min-w-44"><select value={r.categoryId} onChange={(e)=>setCategoryOverrides(p=>({...p,[i]:e.target.value}))} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white w-full"><option value="">Select category…</option>{validCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></td>
           <td className="px-3 py-2 text-slate-300">{Number.isFinite(r.price)&&r.price>0?'₹'+r.price.toLocaleString('en-IN'):<span className="text-rose-400">Invalid</span>}</td><td className="px-3 py-2 text-slate-300">{r.stockQuantity}</td><td className="px-3 py-2 text-slate-300">{r.showOnline?'Yes':'No'}</td>
         </tr>)}</tbody></table></div>
         {rows.length>25 && <p className="px-4 py-2 text-xs text-slate-500">Showing 25 of {rows.length} rows. All valid rows are included in the import.</p>}
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <p className="text-xs text-slate-400"><CheckCircle2 className="inline w-4 h-4 mr-1 text-emerald-400"/>Existing products are not overwritten. Import is written in batches.</p>
+        <p className="text-xs text-slate-400"><CheckCircle2 className="inline w-4 h-4 mr-1 text-emerald-400"/>Existing products are not overwritten. Company subcategories are generated from imported product brands under each category; no separate Firestore collection or rules change is needed.</p>
         <button onClick={handleImport} disabled={!importRows.length||importing} className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold text-sm disabled:opacity-40 flex items-center gap-2">{importing&&<Loader2 className="w-4 h-4 animate-spin"/>}{importing?'Importing…':`Import ${importRows.length} Products`}</button>
       </div>
     </>}
