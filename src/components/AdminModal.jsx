@@ -33,6 +33,7 @@ export const AdminModal = () => {
     addProduct,
     updateProduct,
     deleteProduct,
+    deleteAllProducts,
     updateOrder,
     deleteOrder,
     updateTicket,
@@ -563,6 +564,33 @@ export const AdminModal = () => {
                       <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
                     </div>
 
+                    <button
+                      onClick={async () => {
+                        if (!safeProducts.length) {
+                          showNotification('There are no products to delete.', 'info');
+                          return;
+                        }
+                        const confirmed = window.confirm(
+                          `DELETE ALL ${safeProducts.length} PRODUCTS? This permanently removes them from Firestore and the live storefront. Categories, orders, repair bookings, and admin accounts will remain. This cannot be undone.`
+                        );
+                        if (!confirmed) return;
+                        try {
+                          const deletedCount = await deleteAllProducts();
+                          showNotification(`Deleted ${deletedCount} products from the catalog and storefront.`, 'success');
+                          setProductSearch('');
+                        } catch (error) {
+                          showNotification(error?.message === 'ADMIN_LOGIN_REQUIRED'
+                            ? 'Please sign in as an administrator again.'
+                            : 'Delete all failed. Check Firebase permissions and try again.', 'error');
+                        }
+                      }}
+                      disabled={!safeProducts.length}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-rose-700 hover:bg-rose-600 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow"
+                      title="Permanently delete every product from Firestore and the storefront"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete All Products ({safeProducts.length})</span>
+                    </button>
                     <button
                       onClick={() => setActiveTab('new-product')}
                       className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow"
