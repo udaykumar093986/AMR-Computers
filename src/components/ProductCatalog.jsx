@@ -58,7 +58,7 @@ export const ProductCatalog = ({ searchTerm = '', setSearchTerm, isSearchOpen = 
     return () => window.removeEventListener('popstate', restoreCatalogView);
   }, []);
 
-  const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
+  const safeProducts = Array.isArray(products) ? products.filter((product) => product && product.showOnline !== false) : [];
   const safeCategories = Array.isArray(categories) ? categories.filter(Boolean) : [];
 
   const categoryIcons = {

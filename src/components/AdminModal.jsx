@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BulkProductImport } from './BulkProductImport';
 import { useProducts } from '../context/useProducts';
 import { useCart } from '../context/useCart';
 import {
@@ -464,6 +465,21 @@ export const AdminModal = () => {
                 >
                   <Plus className="w-4 h-4 shrink-0" />
                   <span className="whitespace-nowrap">Add New Product</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('bulk-import');
+                    setEditingProduct(null);
+                  }}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold w-auto md:w-full shrink-0 transition-all ${
+                    activeTab === 'bulk-import'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-bold'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <Upload className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">Bulk Upload</span>
                 </button>
 
                 <button
@@ -1076,6 +1092,9 @@ export const AdminModal = () => {
                   </form>
                 </div>
               )}
+
+              {/* TAB: BULK PRODUCT IMPORT */}
+              {activeTab === 'bulk-import' && <BulkProductImport />}
 
               {/* TAB 4: CATEGORY MANAGER */}
               {activeTab === 'categories' && (

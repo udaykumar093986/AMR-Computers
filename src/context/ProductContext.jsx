@@ -239,6 +239,36 @@ export const ProductProvider = ({ children }) => {
     return { ...productData, id: docRef.id };
   };
 
+  const bulkAddProducts = async (items) => {
+    if (!isAdminAuthenticated || !authUser) throw new Error('ADMIN_LOGIN_REQUIRED');
+    if (!db) throw new Error('Firebase is unavailable. Products were not imported.');
+    if (!Array.isArray(items) || !items.length) throw new Error('No valid products to import.');
+    let imported = 0;
+    for (let start = 0; start < items.length; start += 450) {
+      const batch = writeBatch(db);
+      const chunk = items.slice(start, start + 450);
+      chunk.forEach((item) => {
+        const productRef = doc(collection(db, 'products'));
+        batch.set(productRef, {
+          ...item,
+          name: String(item.name || '').trim(),
+          company: String(item.company || 'Other Brands').trim(),
+          price: Number(item.price),
+          originalPrice: Number(item.originalPrice) || Number(item.price),
+          stockQuantity: Math.max(0, Number(item.stockQuantity) || 0),
+          inStock: Number(item.stockQuantity) > 0,
+          specs: Array.isArray(item.specs) ? item.specs : [],
+          isFeatured: false,
+          rating: 0,
+          reviewsCount: 0
+        });
+      });
+      await batch.commit();
+      imported += chunk.length;
+    }
+    return imported;
+  };
+
   const updateProduct = async (id, updatedData) => {
     setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updatedData } : product));
     if (db) {
@@ -413,7 +443,7 @@ export const ProductProvider = ({ children }) => {
 
   const contextValue = {
     products, categories, orders, tickets,
-    addProduct, updateProduct, deleteProduct, toggleStock, deductStock,
+    addProduct, bulkAddProducts, updateProduct, deleteProduct, toggleStock, deductStock,
     addCategory, deleteCategory, updateCategoryImage, addOrder, updateOrder, deleteOrder,
     addTicket, updateTicket, deleteTicket, resetToDefaults,
     isAdminOpen, openAdmin, closeAdmin,
