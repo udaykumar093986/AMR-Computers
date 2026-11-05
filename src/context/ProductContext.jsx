@@ -3,6 +3,7 @@ import { ProductContext } from './ProductContextDef';
 import { db, auth } from '../firebase';
 import {
   collection,
+  getDocs,
   onSnapshot,
   addDoc,
   updateDoc,
@@ -277,6 +278,20 @@ export const ProductProvider = ({ children }) => {
     }
   };
 
+  const deleteAllProducts = async () => {
+    if (!isAdminAuthenticated || !authUser) throw new Error('ADMIN_LOGIN_REQUIRED');
+    if (!db) throw new Error('Firebase is unavailable. Products were not deleted.');
+    const snapshot = await getDocs(collection(db, 'products'));
+    const docs = snapshot.docs;
+    for (let start = 0; start < docs.length; start += 450) {
+      const batch = writeBatch(db);
+      docs.slice(start, start + 450).forEach((productDoc) => batch.delete(productDoc.ref));
+      await batch.commit();
+    }
+    setProducts((prev) => prev.filter((product) => !docs.some((d) => d.id === product.id)));
+    return docs.length;
+  };
+
   const deleteProduct = async (id) => {
     setProducts((prev) => prev.filter((product) => product.id !== id));
     if (db) {
@@ -443,7 +458,7 @@ export const ProductProvider = ({ children }) => {
 
   const contextValue = {
     products, categories, orders, tickets,
-    addProduct, bulkAddProducts, updateProduct, deleteProduct, toggleStock, deductStock,
+    addProduct, bulkAddProducts, updateProduct, deleteProduct, deleteAllProducts, toggleStock, deductStock,
     addCategory, deleteCategory, updateCategoryImage, addOrder, updateOrder, deleteOrder,
     addTicket, updateTicket, deleteTicket, resetToDefaults,
     isAdminOpen, openAdmin, closeAdmin,
