@@ -44,24 +44,63 @@ export const BulkProductImport = () => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const source = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
       if (!source.length) throw new Error('The selected worksheet has no product rows.');
-      const categoryMap = (value) => {
-        const v = norm(value);
-        let found = validCategories.find((c) => norm(c.id) === v || norm(c.name) === v);
-        const aliases = {
-          'ramssd':'storage-ram','memory':'storage-ram','ssd':'storage-ram','pendrive':'storage-ram',
-          'harddisk':'hard-disk','hdd':'hard-disk','processor':'cpus','cpu':'cpus','graphicscard':'gpus',
-          'graphiccard':'gpus','motherboard':'motherboards','smps':'power-supplies','ups':'power-supplies',
-          'cabinet':'cases','case':'cases','network':'networking','router':'networking',
-          'speaker':'sound-audio','headphone':'sound-audio','cable':'cables-adapters','adapter':'cables-adapters',
-          'webcam':'peripherals','printer':'peripherals','keyboard':'keyboard','mouse':'mouse'
-        };
-        if (!found && aliases[v]) found = validCategories.find((c) => c.id === aliases[v]);
-        return found;
+      const categoryMap = (value, productName = '') => {
+        // Keep word boundaries: the previous normalizer removed spaces before fuzzy matching.
+        const words = (s) => String(s ?? '').toLowerCase().replace(/&/g, ' and ')
+          .replace(/[^a-z0-9]+/g, ' ').trim().split(/\\s+/).filter(Boolean)
+          .map((w) => w.replace(/s$/, ''));
+        const compact = (s) => words(s).join('');
+        const v = compact(value);
+        if (v) {
+          const exact = validCategories.find((c) => compact(c.id) === v || compact(c.name) === v);
+          if (exact) return exact;
+        }
+
+        const aliasGroups = [
+          [['ram','memory','ssd','solid','pendrive','flash','nvme'], ['storage-ram','RAM & SSDs']],
+          [['harddisk','hdd','hard','drive'], ['hard-disk','Hard Disks']],
+          [['cpu','processor','processors'], ['cpus','Processors']],
+          [['gpu','graphics','graphic','video','vga'], ['gpus','Graphics Cards']],
+          [['motherboard','mainboard'], ['motherboards','Motherboards']],
+          [['power','smps','psu','ups'], ['power-supplies','Power Supplies']],
+          [['cooling','fan','heatsink','cooler'], ['cooling','Cooling & Fans']],
+          [['case','cabinet','chassis'], ['cases','PC Cases & Chassis']],
+          [['monitor','display','screen'], ['monitors','Monitors']],
+          [['keyboard'], ['keyboard','Keyboards']],
+          [['mouse'], ['mouse','Mice']],
+          [['network','router','switch','wifi','ethernet','lan'], ['networking','Networking']],
+          [['audio','sound','speaker','headphone','earphone','microphone'], ['sound-audio','Sound & Audio']],
+          [['cable','adapter','connector','converter','cord'], ['cables-adapters','Cables & Adapters']],
+          [['peripheral','webcam','printer','scanner'], ['peripherals','Peripherals']],
+          [['accessory','accessories','misc'], ['accessories','Other Accessories']]
+        ];
+        const valueWords = new Set(words(value));
+        const nameWords = new Set(words(productName));
+        const candidates = [];
+        for (const [terms, targets] of aliasGroups) {
+          if (terms.some((term) => valueWords.has(term) || compact(value).includes(term))) {
+            const category = validCategories.find((c) => targets.some((t) => compact(c.id) === compact(t) || compact(c.name) === compact(t)));
+            if (category) return category;
+          }
+        }
+
+        // If spreadsheet category text is generic/ambiguous, infer from product description
+        // only when a single category keyword family is strongly indicated.
+        for (const [terms, targets] of aliasGroups) {
+          const hits = terms.filter((term) => nameWords.has(term) || [...nameWords].some((w) => w.includes(term) && term.length >= 4)).length;
+          if (hits) {
+            const category = validCategories.find((c) => targets.some((t) => compact(c.id) === compact(t) || compact(c.name) === compact(t)));
+            if (category) candidates.push({ category, hits });
+          }
+        }
+        candidates.sort((a,b) => b.hits-a.hits);
+        if (candidates.length && (candidates.length === 1 || candidates[0].hits > candidates[1].hits)) return candidates[0].category;
+        return undefined;
       };
       const parsed = source.map((row, i) => {
         const name = String(pick(row,['product','productname','name','itemname','descriptionofgoods']) || '').trim();
         const rawCategory = pick(row,['websitecategory','category','productcategory','categoryname']);
-        const cat = categoryMap(rawCategory);
+        const cat = categoryMap(rawCategory, name);
         const company = String(pick(row,['company','brand','manufacturer','companyname']) || '').trim();
         const priceRaw = pick(row,['pricewithtax','sellingpricewithtax','taxinclusiveprice','sellingprice','price','mrp']);
         const price = Number(String(priceRaw).replace(/[₹,\s]/g,''));
