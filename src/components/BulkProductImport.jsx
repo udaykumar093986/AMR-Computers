@@ -12,7 +12,7 @@ const pick = (row, aliases) => {
 const truthy = (v) => ['yes','true','1','y','online','show'].includes(String(v ?? '').trim().toLowerCase());
 
 export const BulkProductImport = () => {
-  const { products = [], categories = [], bulkAddProducts } = useProducts();
+  const { products = [], categories = [], bulkAddProducts, addCategory } = useProducts();
   const { showNotification } = useCart();
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState([]);
@@ -26,7 +26,9 @@ export const BulkProductImport = () => {
   const prepared = useMemo(() => rows.map((r, i) => {
     const catId = categoryOverrides[i] || r.categoryId;
     const cat = validCategories.find((c) => c.id === catId);
-    return { ...r, categoryId: catId, categoryName: cat?.name || r.categoryName, categoryValid: !!cat };
+    const needsCreate = !cat && !!r.rawCategory.trim();
+    return { ...r, categoryId: catId, categoryName: cat?.name || r.rawCategory || r.categoryName,
+      categoryValid: !!cat || needsCreate, categoryNeedsCreate: needsCreate };
   }), [rows, categoryOverrides, categories]);
 
   const validRows = prepared.filter((r) => r.name && Number.isFinite(r.price) && r.price > 0 && r.categoryValid);
@@ -128,13 +130,34 @@ export const BulkProductImport = () => {
     if (!importRows.length) return;
     setImporting(true);
     try {
-      const count = await bulkAddProducts(importRows.map((r) => ({
-        name:r.name, company:r.company, category:r.categoryId, categoryName:r.categoryName,
+      // Create missing categories on demand during the explicit Import action.
+      // Match by normalized name first to avoid duplicate category documents.
+      const categoryByName = new Map(validCategories.map((c) => [norm(c.name), c]));
+      const createdOrMatched = new Map();
+      for (const row of importRows) {
+        const rawName = String(row.rawCategory || '').trim();
+        if (!rawName) throw new Error(`Product "${row.name}" has no category name.`);
+        const key = norm(rawName);
+        if (categoryByName.has(key)) {
+          createdOrMatched.set(key, categoryByName.get(key));
+          continue;
+        }
+        if (!createdOrMatched.has(key)) {
+          const slug = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `category-${Date.now()}`;
+          const category = await addCategory({ id: slug, name: rawName, icon: 'Package' });
+          createdOrMatched.set(key, category);
+          categoryByName.set(key, category);
+        }
+      }
+      const count = await bulkAddProducts(importRows.map((r) => {
+        const category = createdOrMatched.get(norm(r.rawCategory)) || validCategories.find((c) => c.id === r.categoryId);
+        return {
+        name:r.name, company:r.company, category:category.id, categoryName:category.name,
         price:r.price, originalPrice:r.originalPrice, stockQuantity:r.stockQuantity,
         inStock:r.stockQuantity>0, description:r.description, image:r.image, specs:r.specs,
         warranty:r.warranty, badge:r.badge, isFeatured:false, showOnline:r.showOnline
-      })));
-      showNotification(`Imported ${count} products into Firebase.`, 'success');
+      }; }));
+      showNotification(`Imported ${count} products. Missing categories were created automatically.`, 'success');
       setRows([]); setIssues([]); setFileName(''); setCategoryOverrides({});
     } catch (e) {
       showNotification(e?.message === 'ADMIN_LOGIN_REQUIRED' ? 'Please sign in as an administrator.' : 'Import failed. Check Firebase permissions and try again.', 'error');
@@ -157,19 +180,19 @@ export const BulkProductImport = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[['Rows',rows.length],['Ready',validRows.length],['Duplicates skipped',duplicateCount],['Needs correction',rows.length-validRows.length]].map(([label,value])=><div key={label} className="p-3 rounded-xl bg-slate-950 border border-slate-800"><div className="text-xs text-slate-400">{label}</div><div className="text-xl font-bold text-white">{value}</div></div>)}
       </div>
-      {!!issues.length && <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-700/40 text-amber-200 text-sm"><AlertTriangle className="inline w-4 h-4 mr-2"/>Some rows need attention. Fix category mapping below; rows missing name/price are excluded.</div>}
+      {!!issues.length && <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-700/40 text-amber-200 text-sm"><AlertTriangle className="inline w-4 h-4 mr-2"/>Some rows need attention. Missing named categories will be created during Import; rows missing name/price are excluded.</div>}
       <div className="rounded-xl border border-slate-800 overflow-hidden">
         <div className="px-4 py-3 bg-slate-950 text-sm font-semibold text-white">Preview (first 25 rows)</div>
         <div className="overflow-x-auto"><table className="w-full text-xs text-left"><thead className="bg-slate-950/70 text-slate-400"><tr>{['Row','Product','Company','Category mapping','Price with Tax','Qty','Online'].map(x=><th key={x} className="px-3 py-2">{x}</th>)}</tr></thead>
         <tbody>{prepared.slice(0,25).map((r,i)=><tr key={i} className="border-t border-slate-800">
           <td className="px-3 py-2 text-slate-500">{r.sourceRow}</td><td className="px-3 py-2 text-white min-w-48">{r.name||<span className="text-rose-400">Missing name</span>}</td><td className="px-3 py-2 text-slate-300">{r.company}</td>
-          <td className="px-3 py-2 min-w-44"><select value={r.categoryId} onChange={(e)=>setCategoryOverrides(p=>({...p,[i]:e.target.value}))} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white w-full"><option value="">Select category…</option>{validCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></td>
+          <td className="px-3 py-2 min-w-44"><select value={r.categoryId} onChange={(e)=>setCategoryOverrides(p=>({...p,[i]:e.target.value}))} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white w-full"><option value="">Select category…</option>{validCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}{r.categoryNeedsCreate && <option value={r.categoryId || ''} disabled>Will create: {r.rawCategory}</option>}</select></td>
           <td className="px-3 py-2 text-slate-300">{Number.isFinite(r.price)&&r.price>0?'₹'+r.price.toLocaleString('en-IN'):<span className="text-rose-400">Invalid</span>}</td><td className="px-3 py-2 text-slate-300">{r.stockQuantity}</td><td className="px-3 py-2 text-slate-300">{r.showOnline?'Yes':'No'}</td>
         </tr>)}</tbody></table></div>
         {rows.length>25 && <p className="px-4 py-2 text-xs text-slate-500">Showing 25 of {rows.length} rows. All valid rows are included in the import.</p>}
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <p className="text-xs text-slate-400"><CheckCircle2 className="inline w-4 h-4 mr-1 text-emerald-400"/>Existing products are not overwritten. Import is written in batches.</p>
+        <p className="text-xs text-slate-400"><CheckCircle2 className="inline w-4 h-4 mr-1 text-emerald-400"/>Missing categories are created automatically on Import. Existing products are not overwritten; product writes use batches.</p>
         <button onClick={handleImport} disabled={!importRows.length||importing} className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold text-sm disabled:opacity-40 flex items-center gap-2">{importing&&<Loader2 className="w-4 h-4 animate-spin"/>}{importing?'Importing…':`Import ${importRows.length} Products`}</button>
       </div>
     </>}
