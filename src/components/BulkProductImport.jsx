@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { useProducts } from '../context/useProducts';
 import { useCart } from '../context/useCart';
 import { FileSpreadsheet, Upload, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
@@ -39,6 +38,8 @@ export const BulkProductImport = () => {
     setLoading(true); setRows([]); setIssues([]); setCategoryOverrides({});
     try {
       const buffer = await file.arrayBuffer();
+      const XLSX = window.XLSX;
+      if (!XLSX) throw new Error('Excel reader failed to load. Refresh the page and try again.');
       const workbook = XLSX.read(buffer, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const source = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
