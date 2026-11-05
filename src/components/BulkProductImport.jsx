@@ -31,7 +31,7 @@ export const BulkProductImport = () => {
 
   const validRows = prepared.filter((r) => r.name && Number.isFinite(r.price) && r.price > 0 && r.categoryValid);
   const duplicateCount = validRows.filter((r) => existingKeys.has(norm(r.name)+'|'+norm(r.categoryId))).length;
-  const importRows = validRows.filter((r) => !existingKeys.has(norm(r.name)+'|'+norm(r.categoryId)));
+  const importRows = validRows.filter((r, i) => { const key = norm(r.name)+'|'+norm(r.categoryId); return !existingKeys.has(key) && validRows.findIndex((item) => norm(item.name)+'|'+norm(item.categoryId) === key) === i; });
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -68,7 +68,7 @@ export const BulkProductImport = () => {
         const qtyRaw = pick(row,['qty','quantity','stock','stockquantity','closingstock']);
         const stockQuantity = Math.max(0, Number(String(qtyRaw).replace(/[,\s]/g,'')) || 0);
         const showOnline = pick(row,['showonline','online','publish','visibility','active']);
-        const description = String(pick(row,['productdescription','details','remarks']) || '').trim();
+        const description = String(pick(row,['description','productdescription','details','remarks']) || '').trim();
         const originalPriceRaw = pick(row,['originalprice','mrp','listprice']);
         const originalPrice = Number(String(originalPriceRaw).replace(/[₹,\s]/g,'')) || price;
         return { sourceRow:i+2, name, rawCategory:String(rawCategory||'').trim(), categoryId:cat?.id||'', categoryName:cat?.name||'', company:company||'Other Brands', price, originalPrice, stockQuantity, showOnline:showOnline==='' ? true : truthy(showOnline), description, image:'', specs:[], warranty:'', badge:'', isFeatured:false };
