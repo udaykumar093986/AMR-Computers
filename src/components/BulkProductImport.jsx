@@ -135,6 +135,11 @@ export const BulkProductImport = () => {
       const categoryByName = new Map(validCategories.map((c) => [norm(c.name), c]));
       const createdOrMatched = new Map();
       for (const row of importRows) {
+        const selectedCategory = validCategories.find((category) => category.id === row.categoryId);
+        if (selectedCategory) {
+          createdOrMatched.set(norm(row.rawCategory), selectedCategory);
+          continue;
+        }
         const rawName = String(row.rawCategory || '').trim();
         if (!rawName) throw new Error(`Product "${row.name}" has no category name.`);
         const key = norm(rawName);
@@ -150,7 +155,7 @@ export const BulkProductImport = () => {
         }
       }
       const count = await bulkAddProducts(importRows.map((r) => {
-        const category = createdOrMatched.get(norm(r.rawCategory)) || validCategories.find((c) => c.id === r.categoryId);
+        const category = validCategories.find((c) => c.id === r.categoryId) || createdOrMatched.get(norm(r.rawCategory));
         return {
         name:r.name, company:r.company, category:category.id, categoryName:category.name,
         price:r.price, originalPrice:r.originalPrice, stockQuantity:r.stockQuantity,
