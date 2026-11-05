@@ -47,17 +47,42 @@ export const BulkProductImport = () => {
       if (!source.length) throw new Error('The selected worksheet has no product rows.');
       const categoryMap = (value) => {
         const v = norm(value);
+        if (!v) return undefined;
+        // Match exact website category names/IDs first (ignoring punctuation and spacing).
         let found = validCategories.find((c) => norm(c.id) === v || norm(c.name) === v);
+        if (found) return found;
+
+        // Normalize common spreadsheet wording to the site's category vocabulary.
         const aliases = {
-          'ramssd':'storage-ram','memory':'storage-ram','ssd':'storage-ram','pendrive':'storage-ram',
-          'harddisk':'hard-disk','hdd':'hard-disk','processor':'cpus','cpu':'cpus','graphicscard':'gpus',
-          'graphiccard':'gpus','motherboard':'motherboards','smps':'power-supplies','ups':'power-supplies',
-          'cabinet':'cases','case':'cases','network':'networking','router':'networking',
-          'speaker':'sound-audio','headphone':'sound-audio','cable':'cables-adapters','adapter':'cables-adapters',
-          'webcam':'peripherals','printer':'peripherals','keyboard':'keyboard','mouse':'mouse'
+          ramssd:'storage-ram', ramandssd:'storage-ram', memory:'storage-ram', ssd:'storage-ram', pendrive:'storage-ram',
+          harddisk:'hard-disk', harddisks:'hard-disk', hdd:'hard-disk',
+          processor:'cpus', processors:'cpus', cpu:'cpus',
+          graphicscard:'gpus', graphiccards:'gpus', graphiccardsgpu:'gpus', gpu:'gpus',
+          motherboard:'motherboards', smps:'power-supplies', ups:'power-supplies',
+          cabinet:'cases', cabinets:'cases', case:'cases', chassis:'cases',
+          network:'networking', router:'networking',
+          speaker:'sound-audio', speakers:'sound-audio', headphone:'sound-audio', headphones:'sound-audio',
+          cable:'cables-adapters', cables:'cables-adapters', adapter:'cables-adapters', adapters:'cables-adapters',
+          webcam:'peripherals', printer:'peripherals', printers:'peripherals',
+          keyboard:'keyboards', mouse:'mice', accessories:'other-accessories'
         };
-        if (!found && aliases[v]) found = validCategories.find((c) => c.id === aliases[v]);
-        return found;
+        const aliasId = aliases[v];
+        if (aliasId) {
+          found = validCategories.find((c) => norm(c.id) === norm(aliasId) || norm(c.name) === norm(aliasId));
+          if (found) return found;
+        }
+
+        // Handle minor wording differences such as "Other Accessories" vs "Accessories".
+        const tokens = (s) => norm(s).match(/[a-z]+/g)?.map((t) => t.replace(/s$/, '')) || [];
+        const sourceTokens = new Set(tokens(value).filter((t) => !['other','computer','computerpart','parts','product'].includes(t)));
+        if (!sourceTokens.size) return undefined;
+        const scored = validCategories.map((c) => {
+          const targetTokens = new Set(tokens(c.name + ' ' + c.id).filter((t) => !['other','computer','computerpart','parts','product'].includes(t)));
+          const overlap = [...sourceTokens].filter((t) => targetTokens.has(t)).length;
+          return { category:c, score:overlap / Math.min(sourceTokens.size, Math.max(1,targetTokens.size)) };
+        }).sort((a,b) => b.score-a.score);
+        if (scored[0]?.score >= 0.75 && scored[0].score > (scored[1]?.score || 0)) return scored[0].category;
+        return undefined;
       };
       const parsed = source.map((row, i) => {
         const name = String(pick(row,['product','productname','name','itemname','descriptionofgoods']) || '').trim();
