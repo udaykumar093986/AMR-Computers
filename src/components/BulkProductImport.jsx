@@ -110,15 +110,24 @@ export const BulkProductImport = () => {
         const stockQuantity = Math.max(0, Number(String(qtyRaw).replace(/[,\s]/g,'')) || 0);
         const showOnline = pick(row,['showonline','online','publish','visibility','active']);
         const description = String(pick(row,['description','productdescription','details','remarks']) || '').trim();
+        const imageRaw = String(pick(row,['imageurl','productimageurl','photourl','image','productimage','pictureurl','imagelink']) || '').trim();
+        let image = '';
+        if (imageRaw) {
+          try {
+            const parsedImageUrl = new URL(imageRaw);
+            if (parsedImageUrl.protocol === 'https:' || parsedImageUrl.protocol === 'http:') image = parsedImageUrl.href;
+          } catch {}
+        }
         const originalPriceRaw = pick(row,['originalprice','mrp','listprice']);
         const originalPrice = Number(String(originalPriceRaw).replace(/[₹,\s]/g,'')) || price;
-        return { sourceRow:i+2, name, rawCategory:String(rawCategory||'').trim(), categoryId:cat?.id||'', categoryName:cat?.name||'', company:company||'Other Brands', price, originalPrice, stockQuantity, showOnline:showOnline==='' ? true : truthy(showOnline), description, image:'', specs:[], warranty:'', badge:'', isFeatured:false };
+        return { sourceRow:i+2, name, rawCategory:String(rawCategory||'').trim(), categoryId:cat?.id||'', categoryName:cat?.name||'', company:company||'Other Brands', price, originalPrice, stockQuantity, showOnline:showOnline==='' ? true : truthy(showOnline), description, image, imageUrlInvalid:!!imageRaw && !image, specs:[], warranty:'', badge:'', isFeatured:false };
       });
       const problems = [];
       parsed.forEach((r) => {
         if (!r.name) problems.push(`Row ${r.sourceRow}: missing product name`);
         if (!(r.price > 0)) problems.push(`Row ${r.sourceRow}: missing/invalid Price with Tax`);
         if (!r.categoryId) problems.push(`Row ${r.sourceRow}: category "${r.rawCategory || '(blank)'}" needs mapping`);
+        if (r.imageUrlInvalid) problems.push(`Row ${r.sourceRow}: image URL must be a valid http:// or https:// link; product will import without an image`);
       });
       setRows(parsed); setIssues(problems); setFileName(file.name);
     } catch (e) {
@@ -172,7 +181,7 @@ export const BulkProductImport = () => {
   return <div className="space-y-5 max-w-6xl">
     <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800">
       <h3 className="text-base font-bold text-white flex items-center gap-2"><FileSpreadsheet className="w-5 h-5 text-cyan-400"/>Bulk Product Upload</h3>
-      <p className="mt-2 text-sm text-slate-400">Upload .xlsx or .xls directly. Uses <strong className="text-slate-200">Price with Tax</strong> as the website selling price and imports company names as the company/subcategory grouping.</p>
+      <p className="mt-2 text-sm text-slate-400">Upload .xlsx or .xls directly. Add an <strong className="text-slate-200">Image URL</strong> column containing a publicly accessible http/https image link for each product. Uses <strong className="text-slate-200">Price with Tax</strong> as the website selling price and imports company names as the company/subcategory grouping.</p>
       <label className="mt-4 flex flex-col items-center justify-center gap-2 border border-dashed border-cyan-500/40 rounded-xl p-6 text-center cursor-pointer hover:bg-cyan-950/20">
         <Upload className="w-6 h-6 text-cyan-400"/>
         <span className="text-sm font-semibold text-white">{loading ? 'Reading spreadsheet…' : fileName || 'Choose Excel file'}</span>
@@ -188,9 +197,9 @@ export const BulkProductImport = () => {
       {!!issues.length && <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-700/40 text-amber-200 text-sm"><AlertTriangle className="inline w-4 h-4 mr-2"/>Some rows need attention. Missing named categories will be created during Import; rows missing name/price are excluded.</div>}
       <div className="rounded-xl border border-slate-800 overflow-hidden">
         <div className="px-4 py-3 bg-slate-950 text-sm font-semibold text-white">Preview (first 25 rows)</div>
-        <div className="overflow-x-auto"><table className="w-full text-xs text-left"><thead className="bg-slate-950/70 text-slate-400"><tr>{['Row','Product','Company','Category mapping','Price with Tax','Qty','Online'].map(x=><th key={x} className="px-3 py-2">{x}</th>)}</tr></thead>
+        <div className="overflow-x-auto"><table className="w-full text-xs text-left"><thead className="bg-slate-950/70 text-slate-400"><tr>{['Row','Image','Product','Company','Category mapping','Price with Tax','Qty','Online'].map(x=><th key={x} className="px-3 py-2">{x}</th>)}</tr></thead>
         <tbody>{prepared.slice(0,25).map((r,i)=><tr key={i} className="border-t border-slate-800">
-          <td className="px-3 py-2 text-slate-500">{r.sourceRow}</td><td className="px-3 py-2 text-white min-w-48">{r.name||<span className="text-rose-400">Missing name</span>}</td><td className="px-3 py-2 text-slate-300">{r.company}</td>
+          <td className="px-3 py-2 text-slate-500">{r.sourceRow}</td><td className="px-3 py-2">{r.image ? <img src={r.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="w-12 h-12 object-contain rounded bg-white" onError={(e)=>{e.currentTarget.style.opacity='0.25';}}/> : <span className="text-slate-500">No image</span>}</td><td className="px-3 py-2 text-white min-w-48">{r.name||<span className="text-rose-400">Missing name</span>}</td><td className="px-3 py-2 text-slate-300">{r.company}</td>
           <td className="px-3 py-2 min-w-44"><select value={r.categoryId} onChange={(e)=>setCategoryOverrides(p=>({...p,[i]:e.target.value}))} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white w-full"><option value="">Select category…</option>{validCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}{r.categoryNeedsCreate && <option value={r.categoryId || ''} disabled>Will create: {r.rawCategory}</option>}</select></td>
           <td className="px-3 py-2 text-slate-300">{Number.isFinite(r.price)&&r.price>0?'₹'+r.price.toLocaleString('en-IN'):<span className="text-rose-400">Invalid</span>}</td><td className="px-3 py-2 text-slate-300">{r.stockQuantity}</td><td className="px-3 py-2 text-slate-300">{r.showOnline?'Yes':'No'}</td>
         </tr>)}</tbody></table></div>
